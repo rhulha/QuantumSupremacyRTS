@@ -12,7 +12,10 @@ window.addEventListener('resize', resize)
 export const world = {
   width: 3200,
   height: 2200,
-  tanks: []
+  tanks: [],
+  collectors: [],
+  resources: [],
+  hq: null
 }
 
 export const camera = {

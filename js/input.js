@@ -1,6 +1,6 @@
-import { canvas, camera, input, world } from './state.js'
+import { canvas, camera, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
-import { issueMoveCommand, setSelectionFromBox, clearSelection } from './tanks.js'
+import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank } from './tanks.js'
 
 canvas.addEventListener('contextmenu', e => e.preventDefault())
 
@@ -69,16 +69,9 @@ window.addEventListener('mouseup', e => {
     const dragDist = Math.hypot(input.dragCurrentX - input.dragStartX, input.dragCurrentY - input.dragStartY)
     if (dragDist < 4) {
       const worldPos = screenToWorld(input.dragCurrentX, input.dragCurrentY)
-      let clickedTank = null
-      for (let i = world.tanks.length - 1; i >= 0; i--) {
-        const tank = world.tanks[i]
-        if (Math.hypot(worldPos.x - tank.x, worldPos.y - tank.y) <= tank.radius + 10) {
-          clickedTank = tank
-          break
-        }
-      }
+      const clicked = getClickedEntity(worldPos.x, worldPos.y)
       clearSelection()
-      if (clickedTank) clickedTank.selected = true
+      if (clicked) clicked.selected = true
     } else {
       setSelectionFromBox()
     }
@@ -105,3 +98,7 @@ canvas.addEventListener('wheel', e => {
   camera.y += before.y - after.y
   clampCamera()
 }, { passive: false })
+
+document.getElementById('btn-build-tank').addEventListener('click', () => {
+  buildTank()
+})

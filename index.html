@@ -12,8 +12,15 @@
     <div><strong>Controls</strong></div>
     <div>Mouse wheel: zoom to cursor</div>
     <div>Left drag: box select</div>
-    <div>Right click: move selected tanks</div>
+    <div>Right click: move selected units</div>
     <div>Middle drag or Shift+Left drag: pan camera</div>
+    <div>Click HQ to build tanks</div>
+  </div>
+
+  <div id="hq-panel" class="hq-panel hidden">
+    <div class="hq-title">Headquarters</div>
+    <div class="hq-resources">Resources: <span id="hq-resources">0</span></div>
+    <button id="btn-build-tank">Build Tank (50)</button>
   </div>
 
   <script type="module" src="js/main.js"></script>

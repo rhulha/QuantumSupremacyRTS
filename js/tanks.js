@@ -1,26 +1,24 @@
 import { world, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
+import { Tank, Collector } from './vehicles.js'
+import { Resource, HeadQuarters } from './entities.js'
 
 function rand(min, max) {
   return Math.random() * (max - min) + min
 }
 
-function createTank(id) {
-  return {
-    id,
-    x: rand(150, world.width - 150),
-    y: rand(150, world.height - 150),
-    angle: rand(0, Math.PI * 2),
-    speed: 85,
-    selected: false,
-    targetX: null,
-    targetY: null,
-    radius: 18
-  }
+world.hq = new HeadQuarters(world.width / 2, world.height / 2)
+
+for (let i = 0; i < 2; i++) {
+  world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
 }
 
-for (let i = 0; i < 14; i++) {
-  world.tanks.push(createTank(i + 1))
+for (let i = 0; i < 2; i++) {
+  world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
+}
+
+for (let i = 0; i < 8; i++) {
+  world.resources.push(new Resource(rand(200, world.width - 200), rand(200, world.height - 200)))
 }
 
 export function getSelectionRectWorld() {
@@ -34,21 +32,37 @@ export function getSelectionRectWorld() {
   }
 }
 
+function inRect(entity, rect) {
+  return entity.x >= rect.x1 && entity.x <= rect.x2 && entity.y >= rect.y1 && entity.y <= rect.y2
+}
+
 export function setSelectionFromBox() {
   const rect = getSelectionRectWorld()
-  for (const tank of world.tanks) {
-    tank.selected = tank.x >= rect.x1 && tank.x <= rect.x2 && tank.y >= rect.y1 && tank.y <= rect.y2
-  }
+  for (const t of world.tanks) t.selected = inRect(t, rect)
+  for (const c of world.collectors) c.selected = inRect(c, rect)
+  if (world.hq) world.hq.selected = inRect(world.hq, rect)
 }
 
 export function clearSelection() {
-  for (const tank of world.tanks) {
-    tank.selected = false
+  for (const t of world.tanks) t.selected = false
+  for (const c of world.collectors) c.selected = false
+  if (world.hq) world.hq.selected = false
+}
+
+export function getClickedEntity(worldX, worldY) {
+  const all = [...world.tanks, ...world.collectors, world.hq].filter(Boolean)
+  for (let i = all.length - 1; i >= 0; i--) {
+    const e = all[i]
+    if (Math.hypot(worldX - e.x, worldY - e.y) <= e.radius + 10) return e
   }
+  return null
 }
 
 export function issueMoveCommand(worldX, worldY) {
-  const selected = world.tanks.filter(t => t.selected)
+  const selected = [
+    ...world.tanks.filter(t => t.selected),
+    ...world.collectors.filter(c => c.selected)
+  ]
   if (!selected.length) return
 
   const cols = Math.ceil(Math.sqrt(selected.length))
@@ -57,35 +71,27 @@ export function issueMoveCommand(worldX, worldY) {
   const startX = worldX - ((cols - 1) * spacing) / 2
   const startY = worldY - ((rows - 1) * spacing) / 2
 
-  selected.forEach((tank, index) => {
+  selected.forEach((v, index) => {
     const col = index % cols
     const row = Math.floor(index / cols)
-    tank.targetX = startX + col * spacing
-    tank.targetY = startY + row * spacing
+    v.targetX = startX + col * spacing
+    v.targetY = startY + row * spacing
+    if (v instanceof Collector) {
+      v.collectState = 'idle'
+      v.targetResource = null
+    }
   })
 }
 
+export function buildTank() {
+  const hq = world.hq
+  if (!hq || hq.resources < hq.buildCost) return
+  hq.resources -= hq.buildCost
+  world.tanks.push(new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60)))
+}
+
 export function update(dt) {
-  for (const tank of world.tanks) {
-    if (tank.targetX == null || tank.targetY == null) continue
-
-    const dx = tank.targetX - tank.x
-    const dy = tank.targetY - tank.y
-    const dist = Math.hypot(dx, dy)
-
-    if (dist < 2) {
-      tank.x = tank.targetX
-      tank.y = tank.targetY
-      tank.targetX = null
-      tank.targetY = null
-      continue
-    }
-
-    const step = Math.min(dist, tank.speed * dt)
-    tank.x += (dx / dist) * step
-    tank.y += (dy / dist) * step
-    tank.angle = Math.atan2(dy, dx)
-  }
-
+  for (const t of world.tanks) t.update(dt)
+  for (const c of world.collectors) c.update(dt, world)
   clampCamera()
 }
