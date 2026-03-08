@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Map Editor – QuantumSupremacyRTS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #ddd;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: #252525;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+
+    #toolbar h1 {
+      font-size: 15px;
+      font-weight: bold;
+      color: #aaa;
+      margin-right: 4px;
+    }
+
+    button {
+      padding: 5px 14px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #ddd;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover { background: #444; }
+    button.primary { background: #2a5090; border-color: #4a70c0; color: #d0e4ff; }
+    button.primary:hover { background: #3a60a8; }
+
+    #status {
+      margin-left: auto;
+      color: #666;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 168px;
+      flex-shrink: 0;
+      background: #222;
+      border-right: 1px solid #333;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+    }
+
+    #sidebar h2 {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 3px;
+    }
+
+    .tile-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #bbb;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+      width: 100%;
+    }
+    .tile-btn:hover { background: #333; }
+    .tile-btn.active { border-color: #5080d0; background: #1b2540; color: #9abcff; }
+
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+    }
+    .swatch.resource::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px;
+      height: 9px;
+      background: #50c8ff;
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    }
+
+    #canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    #hint {
+      position: absolute;
+      bottom: 8px;
+      right: 10px;
+      color: #444;
+      font-size: 11px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>Map Editor</h1>
+  <button id="btn-load">Load</button>
+  <button id="btn-save" class="primary">Save</button>
+  <div id="status">No file – starting with blank map</div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <h2>Tiles</h2>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div id="hint">Wheel: zoom &nbsp;·&nbsp; Middle drag: pan &nbsp;·&nbsp; Left drag: paint</div>
+  </div>
+</div>
+
+<script type="module">
+  const TILE_DEFS = [
+    { id: 'grass',           label: 'Grass',             color: '#3d6e42' },
+    { id: 'wall',            label: 'Wall',              color: '#5a5a5a' },
+    { id: 'desert',          label: 'Desert',            color: '#c4a24a' },
+    { id: 'resource_grass',  label: 'Resource (Grass)',  color: '#3d6e42', resource: true },
+    { id: 'resource_desert', label: 'Resource (Desert)', color: '#c4a24a', resource: true },
+  ]
+
+  const BASE_CELL = 32
+
+  let map = {
+    cols: 32,
+    rows: 22,
+    tileSize: 100,
+    tiles: Array.from({ length: 22 }, () => Array(32).fill('grass'))
+  }
+
+  let selectedTile = 'grass'
+  let fileHandle = null
+  let painting = false
+  let isPanning = false
+  let panLast = { x: 0, y: 0 }
+  let hovered = null
+
+  const cam = { x: 0, y: 0, zoom: 1 }
+
+  const canvas = document.getElementById('canvas')
+  const ctx = canvas.getContext('2d')
+  const wrap = document.getElementById('canvas-wrap')
+  const statusEl = document.getElementById('status')
+
+  // ---- Sidebar ----
+
+  const sidebar = document.getElementById('sidebar')
+  const tileBtns = {}
+
+  for (const def of TILE_DEFS) {
+    const btn = document.createElement('button')
+    btn.className = 'tile-btn' + (def.id === selectedTile ? ' active' : '')
+    btn.innerHTML = `<span class="swatch${def.resource ? ' resource' : ''}" style="background:${def.color}"></span>${def.label}`
+    btn.addEventListener('click', () => {
+      selectedTile = def.id
+      for (const [id, b] of Object.entries(tileBtns)) b.classList.toggle('active', id === def.id)
+    })
+    sidebar.appendChild(btn)
+    tileBtns[def.id] = btn
+  }
+
+  // ---- Camera ----
+
+  function cellPx() { return BASE_CELL * cam.zoom }
+
+  function fitMap() {
+    const scaleX = canvas.width / (map.cols * BASE_CELL)
+    const scaleY = canvas.height / (map.rows * BASE_CELL)
+    cam.zoom = Math.min(scaleX, scaleY) * 0.95
+    cam.x = (canvas.width - map.cols * cellPx()) / 2
+    cam.y = (canvas.height - map.rows * cellPx()) / 2
+  }
+
+  // ---- Render ----
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.save()
+    ctx.translate(cam.x, cam.y)
+
+    const cs = cellPx()
+
+    for (let row = 0; row < map.rows; row++) {
+      for (let col = 0; col < map.cols; col++) {
+        const id = map.tiles[row][col]
+        const def = TILE_DEFS.find(d => d.id === id) ?? TILE_DEFS[0]
+        const px = col * cs
+        const py = row * cs
+
+        ctx.fillStyle = def.color
+        ctx.fillRect(px, py, cs, cs)
+
+        if (def.resource) {
+          const s = cs * 0.28
+          const cx = px + cs / 2
+          const cy = py + cs / 2
+          ctx.fillStyle = 'rgba(80,200,255,0.88)'
+          ctx.beginPath()
+          ctx.moveTo(cx, cy - s)
+          ctx.lineTo(cx + s * 0.72, cy)
+          ctx.lineTo(cx, cy + s)
+          ctx.lineTo(cx - s * 0.72, cy)
+          ctx.closePath()
+          ctx.fill()
+        }
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'
+    ctx.lineWidth = 1
+    for (let col = 0; col <= map.cols; col++) {
+      ctx.beginPath()
+      ctx.moveTo(col * cs, 0)
+      ctx.lineTo(col * cs, map.rows * cs)
+      ctx.stroke()
+    }
+    for (let row = 0; row <= map.rows; row++) {
+      ctx.beginPath()
+      ctx.moveTo(0, row * cs)
+      ctx.lineTo(map.cols * cs, row * cs)
+      ctx.stroke()
+    }
+
+    if (hovered) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)'
+      ctx.lineWidth = 2
+      ctx.strokeRect(hovered.col * cs + 1, hovered.row * cs + 1, cs - 2, cs - 2)
+    }
+
+    ctx.restore()
+  }
+
+  // ---- Helpers ----
+
+  function screenToTile(sx, sy) {
+    const cs = cellPx()
+    const col = Math.floor((sx - cam.x) / cs)
+    const row = Math.floor((sy - cam.y) / cs)
+    if (col < 0 || col >= map.cols || row < 0 || row >= map.rows) return null
+    return { col, row }
+  }
+
+  function paintAt(sx, sy) {
+    const t = screenToTile(sx, sy)
+    if (!t) return
+    if (map.tiles[t.row][t.col] !== selectedTile) {
+      map.tiles[t.row][t.col] = selectedTile
+      render()
+    }
+  }
+
+  // ---- Mouse ----
+
+  canvas.addEventListener('contextmenu', e => e.preventDefault())
+
+  canvas.addEventListener('mousedown', e => {
+    if (e.button === 1) {
+      isPanning = true
+      panLast = { x: e.clientX, y: e.clientY }
+      return
+    }
+    if (e.button === 0) {
+      painting = true
+      paintAt(e.offsetX, e.offsetY)
+    }
+  })
+
+  canvas.addEventListener('mousemove', e => {
+    hovered = screenToTile(e.offsetX, e.offsetY)
+    if (isPanning) {
+      cam.x += e.clientX - panLast.x
+      cam.y += e.clientY - panLast.y
+      panLast = { x: e.clientX, y: e.clientY }
+    }
+    if (painting) paintAt(e.offsetX, e.offsetY)
+    render()
+  })
+
+  window.addEventListener('mouseup', e => {
+    if (e.button === 1) isPanning = false
+    if (e.button === 0) painting = false
+  })
+
+  canvas.addEventListener('mouseleave', () => { hovered = null; render() })
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault()
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+    const wx = (e.offsetX - cam.x) / cam.zoom
+    const wy = (e.offsetY - cam.y) / cam.zoom
+    cam.zoom = Math.max(0.2, Math.min(10, cam.zoom * factor))
+    cam.x = e.offsetX - wx * cam.zoom
+    cam.y = e.offsetY - wy * cam.zoom
+    render()
+  }, { passive: false })
+
+  // ---- Load / Save ----
+
+  async function loadMap() {
+    let handle
+    try {
+      ;[handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON Map', accept: { 'application/json': ['.json'] } }]
+      })
+    } catch { return }
+
+    fileHandle = handle
+    const file = await handle.getFile()
+    const data = JSON.parse(await file.text())
+    map = data
+    fitMap()
+    render()
+    statusEl.textContent = handle.name
+  }
+
+  async function saveMap() {
+    try {
+      if (!fileHandle) {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: 'map.json',
+          types: [{ description: 'JSON Map', accept: { 'application/json': ['.json'] } }]
+        })
+      }
+      const writable = await fileHandle.createWritable()
+      await writable.write(JSON.stringify(map, null, 2))
+      await writable.close()
+      statusEl.textContent = fileHandle.name + ' – saved'
+    } catch {}
+  }
+
+  document.getElementById('btn-load').addEventListener('click', loadMap)
+  document.getElementById('btn-save').addEventListener('click', saveMap)
+
+  // ---- Init ----
+
+  function resize() {
+    canvas.width = wrap.clientWidth
+    canvas.height = wrap.clientHeight
+    fitMap()
+    render()
+  }
+
+  new ResizeObserver(resize).observe(wrap)
+  resize()
+</script>
+</body>
+</html>
