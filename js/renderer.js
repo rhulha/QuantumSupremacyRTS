@@ -3,6 +3,53 @@ import { canvas, ctx, camera, world, input } from './state.js'
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
 
+const TILE_COLORS = {
+  grass:           '#3a6b3e',
+  wall:            '#525252',
+  desert:          '#b8963e',
+  resource_grass:  '#3a6b3e',
+  resource_desert: '#b8963e',
+  head_quarter:    '#2a3d60',
+}
+
+function drawTiles() {
+  const { cols, rows, tileSize, tiles } = world.map
+  const viewHalfW = canvas.width / 2 / camera.zoom
+  const viewHalfH = canvas.height / 2 / camera.zoom
+  const left = camera.x - viewHalfW
+  const right = camera.x + viewHalfW
+  const top = camera.y - viewHalfH
+  const bottom = camera.y + viewHalfH
+
+  const colStart = Math.max(0, Math.floor(left / tileSize))
+  const colEnd = Math.min(cols - 1, Math.ceil(right / tileSize))
+  const rowStart = Math.max(0, Math.floor(top / tileSize))
+  const rowEnd = Math.min(rows - 1, Math.ceil(bottom / tileSize))
+
+  for (let row = rowStart; row <= rowEnd; row++) {
+    for (let col = colStart; col <= colEnd; col++) {
+      const tile = tiles[row][col]
+      ctx.fillStyle = TILE_COLORS[tile] ?? TILE_COLORS.grass
+      ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize)
+    }
+  }
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = 1 / camera.zoom
+  for (let col = colStart; col <= colEnd + 1; col++) {
+    ctx.beginPath()
+    ctx.moveTo(col * tileSize, rowStart * tileSize)
+    ctx.lineTo(col * tileSize, (rowEnd + 1) * tileSize)
+    ctx.stroke()
+  }
+  for (let row = rowStart; row <= rowEnd + 1; row++) {
+    ctx.beginPath()
+    ctx.moveTo(colStart * tileSize, row * tileSize)
+    ctx.lineTo((colEnd + 1) * tileSize, row * tileSize)
+    ctx.stroke()
+  }
+}
+
 function drawGrid() {
   const grid = 100
   const viewHalfW = canvas.width / 2 / camera.zoom
@@ -232,7 +279,8 @@ export function render() {
     canvas.height / 2 - camera.y * camera.zoom
   )
 
-  drawGrid()
+  if (world.map) drawTiles()
+  else drawGrid()
   drawWorldBounds()
 
   for (const res of world.resources) drawResource(res)

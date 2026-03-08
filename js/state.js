@@ -15,7 +15,8 @@ export const world = {
   tanks: [],
   collectors: [],
   resources: [],
-  hq: null
+  hq: null,
+  map: null
 }
 
 export const camera = {

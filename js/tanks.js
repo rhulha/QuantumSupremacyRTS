@@ -7,18 +7,52 @@ function rand(min, max) {
   return Math.random() * (max - min) + min
 }
 
-world.hq = new HeadQuarters(world.width / 2, world.height / 2)
-
-for (let i = 0; i < 2; i++) {
-  world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
+export function init() {
+  if (world.map) {
+    initFromMap()
+  } else {
+    initRandom()
+  }
 }
 
-for (let i = 0; i < 2; i++) {
-  world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
+function initFromMap() {
+  const { cols, rows, tileSize, tiles } = world.map
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const tile = tiles[row][col]
+      const cx = col * tileSize + tileSize / 2
+      const cy = row * tileSize + tileSize / 2
+
+      if (tile === 'resource_grass' || tile === 'resource_desert') {
+        world.resources.push(new Resource(cx, cy))
+      } else if (tile === 'head_quarter' && !world.hq) {
+        world.hq = new HeadQuarters(cx, cy)
+      }
+    }
+  }
+
+  if (!world.hq) {
+    world.hq = new HeadQuarters(world.width / 2, world.height / 2)
+  }
+
+  for (let i = 0; i < 2; i++) {
+    world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
+    world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
+  }
 }
 
-for (let i = 0; i < 8; i++) {
-  world.resources.push(new Resource(rand(200, world.width - 200), rand(200, world.height - 200)))
+function initRandom() {
+  world.hq = new HeadQuarters(world.width / 2, world.height / 2)
+
+  for (let i = 0; i < 2; i++) {
+    world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
+    world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
+  }
+
+  for (let i = 0; i < 8; i++) {
+    world.resources.push(new Resource(rand(200, world.width - 200), rand(200, world.height - 200)))
+  }
 }
 
 export function getSelectionRectWorld() {
