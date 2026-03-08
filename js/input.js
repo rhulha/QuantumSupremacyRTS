@@ -1,0 +1,107 @@
+import { canvas, camera, input, world } from './state.js'
+import { screenToWorld, clampCamera } from './camera.js'
+import { issueMoveCommand, setSelectionFromBox, clearSelection } from './tanks.js'
+
+canvas.addEventListener('contextmenu', e => e.preventDefault())
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Shift') input.shift = true
+})
+
+window.addEventListener('keyup', e => {
+  if (e.key === 'Shift') input.shift = false
+})
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect()
+  input.mouseX = e.clientX - rect.left
+  input.mouseY = e.clientY - rect.top
+
+  if (e.button === 1 || (e.button === 0 && input.shift)) {
+    input.isPanning = true
+    input.panLastX = input.mouseX
+    input.panLastY = input.mouseY
+    return
+  }
+
+  if (e.button === 0) {
+    input.leftDown = true
+    input.dragStartX = input.mouseX
+    input.dragStartY = input.mouseY
+    input.dragCurrentX = input.mouseX
+    input.dragCurrentY = input.mouseY
+    input.isBoxSelecting = true
+    return
+  }
+
+  if (e.button === 2) {
+    const target = screenToWorld(input.mouseX, input.mouseY)
+    issueMoveCommand(target.x, target.y)
+  }
+})
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect()
+  input.mouseX = e.clientX - rect.left
+  input.mouseY = e.clientY - rect.top
+
+  if (input.isPanning) {
+    const dx = input.mouseX - input.panLastX
+    const dy = input.mouseY - input.panLastY
+    camera.x -= dx / camera.zoom
+    camera.y -= dy / camera.zoom
+    input.panLastX = input.mouseX
+    input.panLastY = input.mouseY
+  }
+
+  if (input.isBoxSelecting) {
+    input.dragCurrentX = input.mouseX
+    input.dragCurrentY = input.mouseY
+  }
+})
+
+window.addEventListener('mouseup', e => {
+  if (e.button === 1 || (e.button === 0 && input.isPanning)) {
+    input.isPanning = false
+  }
+
+  if (e.button === 0 && input.isBoxSelecting) {
+    const dragDist = Math.hypot(input.dragCurrentX - input.dragStartX, input.dragCurrentY - input.dragStartY)
+    if (dragDist < 4) {
+      const worldPos = screenToWorld(input.dragCurrentX, input.dragCurrentY)
+      let clickedTank = null
+      for (let i = world.tanks.length - 1; i >= 0; i--) {
+        const tank = world.tanks[i]
+        if (Math.hypot(worldPos.x - tank.x, worldPos.y - tank.y) <= tank.radius + 10) {
+          clickedTank = tank
+          break
+        }
+      }
+      clearSelection()
+      if (clickedTank) clickedTank.selected = true
+    } else {
+      setSelectionFromBox()
+    }
+
+    input.leftDown = false
+    input.isBoxSelecting = false
+  }
+})
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault()
+
+  const rect = canvas.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const mouseY = e.clientY - rect.top
+
+  const before = screenToWorld(mouseX, mouseY)
+  const zoomFactor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+  camera.zoom *= zoomFactor
+  camera.zoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.zoom))
+  const after = screenToWorld(mouseX, mouseY)
+
+  camera.x += before.x - after.x
+  camera.y += before.y - after.y
+  clampCamera()
+}, { passive: false })
