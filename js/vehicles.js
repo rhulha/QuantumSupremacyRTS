@@ -112,6 +112,7 @@ export class Collector extends Vehicle {
     this.homeHq = homeHq
     this.hp = 60
     this.maxHp = 60
+    this.collectTimer = 0
   }
 
   update(dt, world) {
@@ -144,11 +145,15 @@ export class Collector extends Vehicle {
       const dist = Math.hypot(this.targetResource.x - this.x, this.targetResource.y - this.y)
       if (dist > 25) {
         this.moveTo(this.targetResource.x, this.targetResource.y, dt)
+        this.collectTimer = 2
       } else {
-        const taken = Math.min(20, this.targetResource.amount)
-        this.targetResource.amount -= taken
-        this.carrying += taken
-        this.collectState = 'returning'
+        this.collectTimer -= dt
+        if (this.collectTimer <= 0) {
+          const taken = Math.min(20, this.targetResource.amount)
+          this.targetResource.amount -= taken
+          this.carrying += taken
+          this.collectState = 'returning'
+        }
       }
     } else if (this.collectState === 'returning') {
       if (!this.homeHq) { this.collectState = 'idle'; return }
