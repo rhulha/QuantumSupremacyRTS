@@ -66,6 +66,9 @@ export class Helicopter extends Vehicle {
 
 export function drawHelicopter(heli) {
   const ai = heli.faction === 'ai'
+  const bodyColor = ai ? '#882288' : (heli.selected ? '#60d8d8' : '#206868')
+  const strokeColor = ai ? '#440044' : (heli.selected ? '#a0ffff' : '#0a3030')
+  const rotorColor = ai ? '#dd99dd' : (heli.selected ? '#c0ffff' : '#70cccc')
 
   ctx.save()
   ctx.translate(heli.x, heli.y)
@@ -73,49 +76,75 @@ export function drawHelicopter(heli) {
   // Ground shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)'
   ctx.beginPath()
-  ctx.ellipse(5, 8, 16, 8, 0, 0, Math.PI * 2)
+  ctx.ellipse(4, 8, 18, 9, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  // Body
   ctx.save()
   ctx.rotate(heli.angle)
 
-  ctx.fillStyle = ai ? '#882288' : (heli.selected ? '#60d8d8' : '#206868')
-  ctx.strokeStyle = ai ? '#440044' : (heli.selected ? '#a0ffff' : '#0a3030')
-  ctx.lineWidth = 2 / camera.zoom
+  // Tail fins (swept back, drawn before body so body overlaps root)
+  ctx.fillStyle = ai ? '#661166' : '#184848'
+  ctx.strokeStyle = strokeColor
+  ctx.lineWidth = 1.5 / camera.zoom
+  // Upper fin
   ctx.beginPath()
-  ctx.ellipse(0, 0, 16, 9, 0, 0, Math.PI * 2)
+  ctx.moveTo(-8, -5)
+  ctx.lineTo(-19, -17)
+  ctx.lineTo(-22, -15)
+  ctx.lineTo(-13, -4)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  // Lower fin
+  ctx.beginPath()
+  ctx.moveTo(-8, 5)
+  ctx.lineTo(-19, 17)
+  ctx.lineTo(-22, 15)
+  ctx.lineTo(-13, 4)
+  ctx.closePath()
   ctx.fill()
   ctx.stroke()
 
-  // Tail boom
-  ctx.strokeStyle = ai ? '#882288' : '#206868'
-  ctx.lineWidth = 3 / camera.zoom
+  // Main fuselage — pointed nose at +x, tapers to narrow tail at -x
+  ctx.fillStyle = bodyColor
+  ctx.strokeStyle = strokeColor
+  ctx.lineWidth = 2 / camera.zoom
   ctx.beginPath()
-  ctx.moveTo(-8, 0)
-  ctx.lineTo(-20, 0)
+  ctx.moveTo(18, 0)                              // nose tip
+  ctx.bezierCurveTo(16, -5,  6, -10,  0, -10)   // upper front
+  ctx.bezierCurveTo(-6, -10, -12, -7, -14, -3)  // upper rear
+  ctx.lineTo(-14, 3)                             // tail end
+  ctx.bezierCurveTo(-12,  7, -6,  10,  0,  10)  // lower rear
+  ctx.bezierCurveTo( 6,  10, 16,   5, 18,   0)  // lower front
+  ctx.fill()
   ctx.stroke()
 
-  // Tail rotor (small)
-  ctx.strokeStyle = ai ? '#cc88cc' : '#50b8b8'
-  ctx.lineWidth = 1.5 / camera.zoom
+  // Cockpit window
+  ctx.fillStyle = ai ? '#cc88ff' : '#80e8e8'
+  ctx.globalAlpha = 0.7
   ctx.beginPath()
-  ctx.moveTo(-20, -5)
-  ctx.lineTo(-20, 5)
-  ctx.stroke()
+  ctx.ellipse(9, 0, 5, 4, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
 
   ctx.restore()
 
-  // Main rotor (spins independently of facing angle)
-  ctx.rotate(heli.rotorAngle)
-  ctx.strokeStyle = ai ? '#dd99dd' : (heli.selected ? '#c0ffff' : '#70cccc')
-  ctx.lineWidth = 2 / camera.zoom
+  // Main rotor — 3 blades, spins independently of facing angle
+  ctx.strokeStyle = rotorColor
+  ctx.lineWidth = 2.5 / camera.zoom
+  for (let i = 0; i < 3; i++) {
+    const a = heli.rotorAngle + (i * Math.PI * 2 / 3)
+    ctx.beginPath()
+    ctx.moveTo(3 * Math.cos(a), 3 * Math.sin(a))
+    ctx.lineTo(24 * Math.cos(a), 24 * Math.sin(a))
+    ctx.stroke()
+  }
+
+  // Rotor hub
+  ctx.fillStyle = ai ? '#aa44aa' : '#308888'
   ctx.beginPath()
-  ctx.moveTo(-20, 0)
-  ctx.lineTo(20, 0)
-  ctx.moveTo(0, -20)
-  ctx.lineTo(0, 20)
-  ctx.stroke()
+  ctx.arc(0, 0, 3, 0, Math.PI * 2)
+  ctx.fill()
 
   ctx.restore()
 
