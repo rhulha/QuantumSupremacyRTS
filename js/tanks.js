@@ -7,6 +7,31 @@ function rand(min, max) {
   return Math.random() * (max - min) + min
 }
 
+function farthestCorner(hq) {
+  const corners = [
+    { x: 250, y: 250 },
+    { x: world.width - 250, y: 250 },
+    { x: 250, y: world.height - 250 },
+    { x: world.width - 250, y: world.height - 250 },
+  ]
+  return corners.reduce((best, c) => {
+    const d = Math.hypot(c.x - hq.x, c.y - hq.y)
+    return d > best.d ? { pos: c, d } : best
+  }, { pos: corners[0], d: 0 }).pos
+}
+
+function spawnUnitsNear(hq) {
+  for (let i = 0; i < 2; i++) {
+    const t = new Tank(hq.x + rand(-100, 100), hq.y + rand(-100, 100))
+    t.faction = hq === world.hq ? 'player' : 'ai'
+    world.tanks.push(t)
+
+    const c = new Collector(hq.x + rand(-80, 80), hq.y + rand(-80, 80), hq)
+    c.faction = t.faction
+    world.collectors.push(c)
+  }
+}
+
 export function init() {
   if (world.map) {
     initFromMap()
@@ -17,6 +42,7 @@ export function init() {
 
 function initFromMap() {
   const { cols, rows, tileSize, tiles } = world.map
+  const hqPositions = []
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -26,33 +52,43 @@ function initFromMap() {
 
       if (tile === 'resource_grass' || tile === 'resource_desert') {
         world.resources.push(new Resource(cx, cy))
-      } else if (tile === 'head_quarter' && !world.hq) {
-        world.hq = new HeadQuarters(cx, cy)
+      } else if (tile === 'head_quarter') {
+        hqPositions.push({ x: cx, y: cy })
       }
     }
   }
 
-  if (!world.hq) {
-    world.hq = new HeadQuarters(world.width / 2, world.height / 2)
+  const playerPos = hqPositions[0] ?? { x: world.width / 2, y: world.height / 2 }
+  world.hq = new HeadQuarters(playerPos.x, playerPos.y)
+
+  if (hqPositions[1]) {
+    world.aiHq = new HeadQuarters(hqPositions[1].x, hqPositions[1].y)
+  } else {
+    const pos = farthestCorner(world.hq)
+    world.aiHq = new HeadQuarters(pos.x, pos.y)
   }
 
-  for (let i = 0; i < 2; i++) {
-    world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
-    world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
+  if (world.resources.length === 0) {
+    for (let i = 0; i < 8; i++) {
+      world.resources.push(new Resource(rand(200, world.width - 200), rand(200, world.height - 200)))
+    }
   }
+
+  spawnUnitsNear(world.hq)
+  spawnUnitsNear(world.aiHq)
 }
 
 function initRandom() {
   world.hq = new HeadQuarters(world.width / 2, world.height / 2)
-
-  for (let i = 0; i < 2; i++) {
-    world.tanks.push(new Tank(world.hq.x + rand(-100, 100), world.hq.y + rand(-100, 100)))
-    world.collectors.push(new Collector(world.hq.x + rand(-80, 80), world.hq.y + rand(-80, 80)))
-  }
+  const aiPos = farthestCorner(world.hq)
+  world.aiHq = new HeadQuarters(aiPos.x, aiPos.y)
 
   for (let i = 0; i < 8; i++) {
     world.resources.push(new Resource(rand(200, world.width - 200), rand(200, world.height - 200)))
   }
+
+  spawnUnitsNear(world.hq)
+  spawnUnitsNear(world.aiHq)
 }
 
 export function getSelectionRectWorld() {
@@ -72,8 +108,8 @@ function inRect(entity, rect) {
 
 export function setSelectionFromBox() {
   const rect = getSelectionRectWorld()
-  for (const t of world.tanks) t.selected = inRect(t, rect)
-  for (const c of world.collectors) c.selected = inRect(c, rect)
+  for (const t of world.tanks) t.selected = t.faction === 'player' && inRect(t, rect)
+  for (const c of world.collectors) c.selected = c.faction === 'player' && inRect(c, rect)
   if (world.hq) world.hq.selected = inRect(world.hq, rect)
 }
 
@@ -84,7 +120,11 @@ export function clearSelection() {
 }
 
 export function getClickedEntity(worldX, worldY) {
-  const all = [...world.tanks, ...world.collectors, world.hq].filter(Boolean)
+  const all = [
+    ...world.tanks.filter(t => t.faction === 'player'),
+    ...world.collectors.filter(c => c.faction === 'player'),
+    world.hq
+  ].filter(Boolean)
   for (let i = all.length - 1; i >= 0; i--) {
     const e = all[i]
     if (Math.hypot(worldX - e.x, worldY - e.y) <= e.radius + 10) return e
@@ -121,7 +161,9 @@ export function buildTank() {
   const hq = world.hq
   if (!hq || hq.resources < hq.buildCost) return
   hq.resources -= hq.buildCost
-  world.tanks.push(new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60)))
+  const t = new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60))
+  t.faction = 'player'
+  world.tanks.push(t)
 }
 
 export function update(dt) {

@@ -16,6 +16,7 @@ export const world = {
   collectors: [],
   resources: [],
   hq: null,
+  aiHq: null,
   map: null
 }
 

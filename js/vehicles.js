@@ -8,6 +8,7 @@ export class Vehicle {
     this.targetX = null
     this.targetY = null
     this.radius = 18
+    this.faction = 'player'
   }
 
   moveTo(tx, ty, dt) {
@@ -49,13 +50,14 @@ export class Tank extends Vehicle {
 }
 
 export class Collector extends Vehicle {
-  constructor(x, y) {
+  constructor(x, y, homeHq) {
     super(x, y)
     this.speed = 60
     this.radius = 14
     this.carrying = 0
     this.collectState = 'idle'
     this.targetResource = null
+    this.homeHq = homeHq
   }
 
   update(dt, world) {
@@ -86,12 +88,12 @@ export class Collector extends Vehicle {
         this.collectState = 'returning'
       }
     } else if (this.collectState === 'returning') {
-      if (!world.hq) { this.collectState = 'idle'; return }
-      const dist = Math.hypot(world.hq.x - this.x, world.hq.y - this.y)
+      if (!this.homeHq) { this.collectState = 'idle'; return }
+      const dist = Math.hypot(this.homeHq.x - this.x, this.homeHq.y - this.y)
       if (dist > 45) {
-        this.moveTo(world.hq.x, world.hq.y, dt)
+        this.moveTo(this.homeHq.x, this.homeHq.y, dt)
       } else {
-        world.hq.resources += this.carrying
+        this.homeHq.resources += this.carrying
         this.carrying = 0
         this.collectState = 'idle'
         this.targetResource = null

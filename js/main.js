@@ -1,6 +1,7 @@
 import { update, init } from './tanks.js'
 import { render } from './renderer.js'
 import { loadMap } from './map.js'
+import { updateAI } from './ai.js'
 import { camera, world } from './state.js'
 import './input.js'
 
@@ -19,6 +20,7 @@ async function start() {
     const dt = Math.min(0.05, (now - lastTime) / 1000)
     lastTime = now
     update(dt)
+    updateAI()
     render()
     requestAnimationFrame(frame)
   }

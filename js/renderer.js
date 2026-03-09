@@ -1,7 +1,9 @@
 import { canvas, ctx, camera, world, input } from './state.js'
+import { getAIPhase, getAITankCount } from './ai.js'
 
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
+const aiStatus = document.getElementById('ai-status')
 
 const TILE_COLORS = {
   grass:           '#3a6b3e',
@@ -117,12 +119,13 @@ function drawResource(res) {
 }
 
 function drawTank(tank) {
+  const ai = tank.faction === 'ai'
   ctx.save()
   ctx.translate(tank.x, tank.y)
   ctx.rotate(tank.angle)
 
-  ctx.fillStyle = tank.selected ? '#8ef58e' : '#5ea05e'
-  ctx.strokeStyle = tank.selected ? '#d8ffd8' : '#1f301f'
+  ctx.fillStyle = ai ? '#c03030' : (tank.selected ? '#8ef58e' : '#5ea05e')
+  ctx.strokeStyle = ai ? '#600000' : (tank.selected ? '#d8ffd8' : '#1f301f')
   ctx.lineWidth = 2 / camera.zoom
 
   ctx.beginPath()
@@ -130,10 +133,10 @@ function drawTank(tank) {
   ctx.fill()
   ctx.stroke()
 
-  ctx.fillStyle = '#2f4a2f'
+  ctx.fillStyle = ai ? '#6a1010' : '#2f4a2f'
   ctx.fillRect(-10, -10, 20, 20)
 
-  ctx.strokeStyle = '#d7e6d7'
+  ctx.strokeStyle = ai ? '#ffaaaa' : '#d7e6d7'
   ctx.lineWidth = 4 / camera.zoom
   ctx.beginPath()
   ctx.moveTo(0, 0)
@@ -161,12 +164,13 @@ function drawTank(tank) {
 }
 
 function drawCollector(c) {
+  const ai = c.faction === 'ai'
   ctx.save()
   ctx.translate(c.x, c.y)
   ctx.rotate(c.angle)
 
-  ctx.fillStyle = c.selected ? '#f5e87a' : '#b5a84a'
-  ctx.strokeStyle = c.selected ? '#ffffc0' : '#3a3010'
+  ctx.fillStyle = ai ? '#c06020' : (c.selected ? '#f5e87a' : '#b5a84a')
+  ctx.strokeStyle = ai ? '#602000' : (c.selected ? '#ffffc0' : '#3a3010')
   ctx.lineWidth = 2 / camera.zoom
 
   ctx.beginPath()
@@ -208,19 +212,19 @@ function drawCollector(c) {
   }
 }
 
-function drawHQ(hq) {
+function drawHQ(hq, ai = false) {
   ctx.save()
   ctx.translate(hq.x, hq.y)
 
-  ctx.fillStyle = hq.selected ? '#5080c8' : '#304878'
-  ctx.strokeStyle = hq.selected ? '#a0c0ff' : '#1a2840'
+  ctx.fillStyle = ai ? '#602020' : (hq.selected ? '#5080c8' : '#304878')
+  ctx.strokeStyle = ai ? '#300000' : (hq.selected ? '#a0c0ff' : '#1a2840')
   ctx.lineWidth = 3 / camera.zoom
   ctx.beginPath()
   ctx.roundRect(-hq.radius, -hq.radius, hq.radius * 2, hq.radius * 2, 8 / camera.zoom)
   ctx.fill()
   ctx.stroke()
 
-  ctx.strokeStyle = hq.selected ? '#c0e0ff' : '#8aafdf'
+  ctx.strokeStyle = ai ? '#ff8888' : (hq.selected ? '#c0e0ff' : '#8aafdf')
   ctx.lineWidth = 4 / camera.zoom
   ctx.beginPath()
   ctx.moveTo(-16, 0)
@@ -285,6 +289,7 @@ export function render() {
 
   for (const res of world.resources) drawResource(res)
   if (world.hq) drawHQ(world.hq)
+  if (world.aiHq) drawHQ(world.aiHq, true)
 
   drawMoveMarkers()
 
@@ -299,4 +304,10 @@ export function render() {
   } else {
     hqPanel.classList.add('hidden')
   }
+
+  const phase = getAIPhase()
+  const count = getAITankCount()
+  aiStatus.textContent = phase === 'attacking'
+    ? `AI: ATTACKING! (${count} tanks)`
+    : `AI: Building (${count} / 40)`
 }
