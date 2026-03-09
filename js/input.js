@@ -1,6 +1,15 @@
-import { canvas, camera, input } from './state.js'
+import { canvas, camera, input, world } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
 import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector } from './game.js'
+
+function isWall(wx, wy) {
+  if (!world.map) return false
+  const { tileSize, tiles, rows, cols } = world.map
+  const col = Math.floor(wx / tileSize)
+  const row = Math.floor(wy / tileSize)
+  if (row < 0 || row >= rows || col < 0 || col >= cols) return false
+  return tiles[row][col] === 'wall'
+}
 
 canvas.addEventListener('contextmenu', e => e.preventDefault())
 
@@ -36,7 +45,7 @@ canvas.addEventListener('mousedown', e => {
 
   if (e.button === 2) {
     const target = screenToWorld(input.mouseX, input.mouseY)
-    issueMoveCommand(target.x, target.y)
+    if (!isWall(target.x, target.y)) issueMoveCommand(target.x, target.y)
   }
 })
 
