@@ -110,20 +110,17 @@ function inRect(entity, rect) {
 export function setSelectionFromBox() {
   const rect = getSelectionRectWorld()
   for (const t of world.tanks) t.selected = t.faction === 'player' && inRect(t, rect)
-  for (const c of world.collectors) c.selected = c.faction === 'player' && inRect(c, rect)
   if (world.hq) world.hq.selected = inRect(world.hq, rect)
 }
 
 export function clearSelection() {
   for (const t of world.tanks) t.selected = false
-  for (const c of world.collectors) c.selected = false
   if (world.hq) world.hq.selected = false
 }
 
 export function getClickedEntity(worldX, worldY) {
   const all = [
     ...world.tanks.filter(t => t.faction === 'player'),
-    ...world.collectors.filter(c => c.faction === 'player'),
     world.hq
   ].filter(Boolean)
   for (let i = all.length - 1; i >= 0; i--) {
@@ -134,10 +131,7 @@ export function getClickedEntity(worldX, worldY) {
 }
 
 export function issueMoveCommand(worldX, worldY) {
-  const selected = [
-    ...world.tanks.filter(t => t.selected),
-    ...world.collectors.filter(c => c.selected)
-  ]
+  const selected = world.tanks.filter(t => t.selected)
   if (!selected.length) return
 
   const cols = Math.ceil(Math.sqrt(selected.length))
@@ -160,10 +154,6 @@ export function issueMoveCommand(worldX, worldY) {
       v.path = null
       v.targetX = tx
       v.targetY = ty
-    }
-    if (v instanceof Collector) {
-      v.collectState = 'idle'
-      v.targetResource = null
     }
   })
 }

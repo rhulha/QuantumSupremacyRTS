@@ -194,14 +194,6 @@ function drawCollector(c) {
 
   ctx.restore()
 
-  if (c.selected) {
-    ctx.strokeStyle = 'rgba(255,240,120,0.9)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(c.x, c.y, c.radius + 8, 0, Math.PI * 2)
-    ctx.stroke()
-  }
-
   if (c.hp < c.maxHp) {
     const bw = 24, bh = 3
     const bx = c.x - bw / 2, by = c.y - 24
@@ -211,14 +203,7 @@ function drawCollector(c) {
     ctx.fillRect(bx, by, bw * c.hp / c.maxHp, bh)
   }
 
-  if (c.targetX != null) {
-    ctx.strokeStyle = 'rgba(255,240,100,0.35)'
-    ctx.lineWidth = 1.5 / camera.zoom
-    ctx.beginPath()
-    ctx.moveTo(c.x, c.y)
-    ctx.lineTo(c.targetX, c.targetY)
-    ctx.stroke()
-  } else if (c.targetResource && c.collectState === 'fetching') {
+  if (c.targetResource && c.collectState === 'fetching') {
     ctx.strokeStyle = 'rgba(80,200,255,0.3)'
     ctx.lineWidth = 1 / camera.zoom
     ctx.setLineDash([6 / camera.zoom, 6 / camera.zoom])
