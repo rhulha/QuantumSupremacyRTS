@@ -1,10 +1,9 @@
 import { canvas, ctx, camera, world, input } from './state.js'
-import { isVisible, isExplored } from './fog.js'
+import { isVisible, isExplored, drawFog } from './fog.js'
 import { drawTank } from './tank.js'
 import { drawCollector } from './collector.js'
 import { drawHQ, updateHQPanel } from './hq.js'
-import { drawTiles, drawGrid, drawWorldBounds, drawResource } from './map-renderer.js'
-import { drawFog } from './fog-renderer.js'
+import { drawTiles, drawGrid, drawWorldBounds, drawResource } from './map.js'
 
 function worldTransform() {
   ctx.setTransform(
