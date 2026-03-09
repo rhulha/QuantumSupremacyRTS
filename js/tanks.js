@@ -172,13 +172,44 @@ export function buildTank() {
   const hq = world.hq
   if (!hq || hq.resources < hq.buildCost) return
   hq.resources -= hq.buildCost
-  const t = new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60))
-  t.faction = 'player'
-  world.tanks.push(t)
+  hq.buildQueue.push({ type: 'tank', timer: 5, totalTime: 5 })
+}
+
+export function buildCollector() {
+  const hq = world.hq
+  if (!hq || hq.resources < hq.collectorBuildCost) return
+  hq.resources -= hq.collectorBuildCost
+  hq.buildQueue.push({ type: 'collector', timer: 4, totalTime: 4 })
+}
+
+function processQueue(hq, faction, dt) {
+  if (!hq) return
+  for (const job of hq.buildQueue) {
+    job.timer -= dt
+  }
+  const done = hq.buildQueue.filter(j => j.timer <= 0)
+  hq.buildQueue = hq.buildQueue.filter(j => j.timer > 0)
+  for (const job of done) {
+    if (job.type === 'tank') {
+      const t = new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60))
+      t.faction = faction
+      world.tanks.push(t)
+    } else if (job.type === 'collector') {
+      const c = new Collector(hq.x + rand(-60, 60), hq.y + rand(-60, 60), hq)
+      c.faction = faction
+      world.collectors.push(c)
+    }
+  }
 }
 
 export function update(dt) {
-  for (const t of world.tanks) t.update(dt)
+  processQueue(world.hq, 'player', dt)
+  processQueue(world.aiHq, 'ai', dt)
+
+  world.tanks = world.tanks.filter(t => t.hp > 0)
+  world.collectors = world.collectors.filter(c => c.hp > 0)
+
+  for (const t of world.tanks) t.update(dt, world)
   for (const c of world.collectors) c.update(dt, world)
   clampCamera()
 }

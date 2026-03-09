@@ -16,5 +16,9 @@ export class HeadQuarters {
     this.resources = 100
     this.radius = 45
     this.buildCost = 50
+    this.collectorBuildCost = 30
+    this.hp = 500
+    this.maxHp = 500
+    this.buildQueue = []
   }
 }

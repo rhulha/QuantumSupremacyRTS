@@ -4,6 +4,7 @@ import { getFogGrids, isVisible, isExplored, SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECT
 
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
+const hqBuildQueue = document.getElementById('hq-build-queue')
 const aiStatus = document.getElementById('ai-status')
 
 const TILE_COLORS = {
@@ -160,6 +161,15 @@ function drawTank(tank) {
     ctx.arc(tank.x, tank.y, tank.radius + 10, 0, Math.PI * 2)
     ctx.stroke()
   }
+
+  if (tank.hp < tank.maxHp) {
+    const bw = 36, bh = 4
+    const bx = tank.x - bw / 2, by = tank.y - 32
+    ctx.fillStyle = '#222'
+    ctx.fillRect(bx, by, bw, bh)
+    ctx.fillStyle = tank.faction === 'ai' ? '#c04040' : '#40c040'
+    ctx.fillRect(bx, by, bw * tank.hp / tank.maxHp, bh)
+  }
 }
 
 function drawCollector(c) {
@@ -190,6 +200,15 @@ function drawCollector(c) {
     ctx.beginPath()
     ctx.arc(c.x, c.y, c.radius + 8, 0, Math.PI * 2)
     ctx.stroke()
+  }
+
+  if (c.hp < c.maxHp) {
+    const bw = 24, bh = 3
+    const bx = c.x - bw / 2, by = c.y - 24
+    ctx.fillStyle = '#222'
+    ctx.fillRect(bx, by, bw, bh)
+    ctx.fillStyle = c.faction === 'ai' ? '#c04040' : '#40c040'
+    ctx.fillRect(bx, by, bw * c.hp / c.maxHp, bh)
   }
 
   if (c.targetX != null) {
@@ -240,6 +259,15 @@ function drawHQ(hq, ai = false) {
     ctx.beginPath()
     ctx.arc(hq.x, hq.y, hq.radius + 10, 0, Math.PI * 2)
     ctx.stroke()
+  }
+
+  if (hq.hp < hq.maxHp) {
+    const bw = 80, bh = 6
+    const bx = hq.x - bw / 2, by = hq.y - hq.radius - 14
+    ctx.fillStyle = '#222'
+    ctx.fillRect(bx, by, bw, bh)
+    ctx.fillStyle = ai ? '#c04040' : '#4090e0'
+    ctx.fillRect(bx, by, bw * hq.hp / hq.maxHp, bh)
   }
 }
 
@@ -378,6 +406,10 @@ export function render() {
   if (world.hq && world.hq.selected) {
     hqPanel.classList.remove('hidden')
     hqResSpan.textContent = Math.floor(world.hq.resources)
+    const q = world.hq.buildQueue
+    hqBuildQueue.textContent = q.length > 0
+      ? `Building: ${q[0].type} (${q[0].timer.toFixed(1)}s)${q.length > 1 ? ` +${q.length - 1}` : ''}`
+      : ''
   } else {
     hqPanel.classList.add('hidden')
   }

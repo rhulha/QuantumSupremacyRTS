@@ -1,13 +1,9 @@
 import { world } from './state.js'
-import { Tank } from './vehicles.js'
 
 const ATTACK_AT = 40
 
 let phase = 'gathering' // 'gathering' | 'attacking'
 
-function rand(min, max) {
-  return Math.random() * (max - min) + min
-}
 
 function launchAttack(aiTanks) {
   if (!world.hq) return
@@ -25,14 +21,18 @@ export function updateAI() {
   if (!world.aiHq) return
   if (phase !== 'gathering') return
 
+  const aiHq = world.aiHq
   const aiTanks = world.tanks.filter(t => t.faction === 'ai')
+  const aiCollectors = world.collectors.filter(c => c.faction === 'ai')
 
-  while (world.aiHq.resources >= world.aiHq.buildCost && aiTanks.length < ATTACK_AT) {
-    world.aiHq.resources -= world.aiHq.buildCost
-    const t = new Tank(world.aiHq.x + rand(-80, 80), world.aiHq.y + rand(-80, 80))
-    t.faction = 'ai'
-    world.tanks.push(t)
-    aiTanks.push(t)
+  if (aiHq.buildQueue.length === 0) {
+    if (aiCollectors.length < 2 && aiHq.resources >= aiHq.collectorBuildCost) {
+      aiHq.resources -= aiHq.collectorBuildCost
+      aiHq.buildQueue.push({ type: 'collector', timer: 4, totalTime: 4 })
+    } else if (aiTanks.length < ATTACK_AT && aiHq.resources >= aiHq.buildCost) {
+      aiHq.resources -= aiHq.buildCost
+      aiHq.buildQueue.push({ type: 'tank', timer: 5, totalTime: 5 })
+    }
   }
 
   if (aiTanks.length >= ATTACK_AT) {

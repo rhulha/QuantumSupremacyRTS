@@ -1,6 +1,6 @@
 import { canvas, camera, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
-import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank } from './tanks.js'
+import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector } from './tanks.js'
 
 canvas.addEventListener('contextmenu', e => e.preventDefault())
 
@@ -101,4 +101,8 @@ canvas.addEventListener('wheel', e => {
 
 document.getElementById('btn-build-tank').addEventListener('click', () => {
   buildTank()
+})
+
+document.getElementById('btn-build-collector').addEventListener('click', () => {
+  buildCollector()
 })

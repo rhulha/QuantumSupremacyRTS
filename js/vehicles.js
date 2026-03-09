@@ -55,9 +55,48 @@ export class Tank extends Vehicle {
     super(x, y)
     this.speed = 85
     this.radius = 18
+    this.hp = 100
+    this.maxHp = 100
+    this.attackRange = 200
+    this.attackDamage = 15
+    this.attackCooldown = 1.5
+    this.attackTimer = 0
   }
 
-  update(dt) {
+  update(dt, world) {
+    this.attackTimer = Math.max(0, this.attackTimer - dt)
+
+    const enemies = this.faction === 'player'
+      ? [
+          ...world.tanks.filter(t => t.faction === 'ai' && t.hp > 0),
+          ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
+          world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
+        ].filter(Boolean)
+      : [
+          ...world.tanks.filter(t => t.faction === 'player' && t.hp > 0),
+          ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
+          world.hq && world.hq.hp > 0 ? world.hq : null
+        ].filter(Boolean)
+
+    let nearest = null
+    let nearestDist = Infinity
+    for (const e of enemies) {
+      const d = Math.hypot(e.x - this.x, e.y - this.y)
+      if (d < nearestDist) {
+        nearestDist = d
+        nearest = e
+      }
+    }
+
+    if (nearest && nearestDist <= this.attackRange) {
+      this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
+      if (this.attackTimer <= 0) {
+        nearest.hp -= this.attackDamage
+        this.attackTimer = this.attackCooldown
+      }
+      return
+    }
+
     this.updateMove(dt)
   }
 }
@@ -71,6 +110,8 @@ export class Collector extends Vehicle {
     this.collectState = 'idle'
     this.targetResource = null
     this.homeHq = homeHq
+    this.hp = 60
+    this.maxHp = 60
   }
 
   update(dt, world) {
@@ -80,9 +121,18 @@ export class Collector extends Vehicle {
     }
 
     if (this.collectState === 'idle') {
-      const res = world.resources.find(r => r.amount > 0)
-      if (res) {
-        this.targetResource = res
+      let closest = null
+      let closestDist = Infinity
+      for (const r of world.resources) {
+        if (r.amount <= 0) continue
+        const d = Math.hypot(r.x - this.x, r.y - this.y)
+        if (d < closestDist) {
+          closestDist = d
+          closest = r
+        }
+      }
+      if (closest) {
+        this.targetResource = closest
         this.collectState = 'fetching'
       }
     } else if (this.collectState === 'fetching') {
