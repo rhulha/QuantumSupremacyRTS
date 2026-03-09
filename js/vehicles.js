@@ -9,6 +9,7 @@ export class Vehicle {
     this.targetY = null
     this.radius = 18
     this.faction = 'player'
+    this.path = null
   }
 
   moveTo(tx, ty, dt) {
@@ -28,6 +29,18 @@ export class Vehicle {
   }
 
   updateMove(dt) {
+    if (this.path && this.path.length > 0) {
+      const wp = this.path[0]
+      if (this.moveTo(wp.x, wp.y, dt)) {
+        this.path.shift()
+        if (this.path.length === 0) {
+          this.path = null
+          this.targetX = null
+          this.targetY = null
+        }
+      }
+      return
+    }
     if (this.targetX == null) return
     const arrived = this.moveTo(this.targetX, this.targetY, dt)
     if (arrived) {

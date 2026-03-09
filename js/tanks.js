@@ -2,6 +2,7 @@ import { world, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
 import { Tank, Collector } from './vehicles.js'
 import { Resource, HeadQuarters } from './entities.js'
+import { findPath } from './pathfinding.js'
 
 function rand(min, max) {
   return Math.random() * (max - min) + min
@@ -148,8 +149,18 @@ export function issueMoveCommand(worldX, worldY) {
   selected.forEach((v, index) => {
     const col = index % cols
     const row = Math.floor(index / cols)
-    v.targetX = startX + col * spacing
-    v.targetY = startY + row * spacing
+    const tx = startX + col * spacing
+    const ty = startY + row * spacing
+    const path = findPath(v.x, v.y, tx, ty)
+    if (path) {
+      v.path = path
+      v.targetX = null
+      v.targetY = null
+    } else {
+      v.path = null
+      v.targetX = tx
+      v.targetY = ty
+    }
     if (v instanceof Collector) {
       v.collectState = 'idle'
       v.targetResource = null
