@@ -1,6 +1,6 @@
 import { canvas, camera, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
-import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector } from './tanks.js'
+import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector } from './game.js'
 
 canvas.addEventListener('contextmenu', e => e.preventDefault())
 

@@ -1,4 +1,4 @@
-import { update, init } from './tanks.js'
+import { update, init } from './game.js'
 import { render } from './renderer.js'
 import { loadMap } from './map.js'
 import { updateAI } from './ai.js'
