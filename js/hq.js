@@ -48,7 +48,7 @@ export function drawHQ(hq, ai = false) {
 }
 
 export function updateHQPanel(hq) {
-  if (hq && hq.selected) {
+  if (hq) {
     hqPanel.classList.remove('hidden')
     hqResSpan.textContent = Math.floor(hq.resources)
     const q = hq.buildQueue
