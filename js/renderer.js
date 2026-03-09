@@ -333,8 +333,8 @@ function drawFog() {
     for (let col = colStart; col <= colEnd; col++) {
       if (visGrid[row][col] === 1) continue
       fc.fillStyle = exploredGrid[row][col] === 1
-        ? 'rgba(0,0,0,0.58)'
-        : 'rgba(0,0,0,0.92)'
+        ? 'rgba(0,0,0,0.06)'
+        : 'rgba(0,0,0,0.16)'
       fc.fillRect(col * ts, row * ts, ts, ts)
     }
   }
