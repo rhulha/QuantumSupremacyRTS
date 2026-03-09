@@ -1,6 +1,6 @@
 import { canvas, ctx, camera, world, input } from './state.js'
 import { getAIPhase, getAITankCount } from './ai.js'
-import { getFogGrids, isVisible, isExplored } from './fog.js'
+import { getFogGrids, isVisible, isExplored, SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECTOR } from './fog.js'
 
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
@@ -320,7 +320,7 @@ function drawFog() {
   ].filter(Boolean)
 
   for (const src of sources) {
-    const r = src === world.hq ? 300 : src.radius === 14 ? 160 : 220
+    const r = src === world.hq ? SIGHT_HQ : src.radius === 14 ? SIGHT_COLLECTOR : SIGHT_TANK
     const grad = fc.createRadialGradient(src.x, src.y, r * 0.65, src.x, src.y, r)
     grad.addColorStop(0, 'rgba(0,0,0,1)')
     grad.addColorStop(1, 'rgba(0,0,0,0)')

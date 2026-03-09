@@ -1,8 +1,8 @@
 import { world } from './state.js'
 
-const SIGHT_HQ = 300
-const SIGHT_TANK = 220
-const SIGHT_COLLECTOR = 160
+export const SIGHT_HQ = 500
+export const SIGHT_TANK = 380
+export const SIGHT_COLLECTOR = 260
 
 let exploredGrid = null
 let visGrid = null
