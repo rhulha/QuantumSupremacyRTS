@@ -192,6 +192,27 @@ function processQueue(hq, faction, dt) {
   }
 }
 
+function applySeparation(dt) {
+  const all = [...world.tanks, ...world.collectors]
+  for (let i = 0; i < all.length; i++) {
+    for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j]
+      const dx = b.x - a.x
+      const dy = b.y - a.y
+      const dist = Math.hypot(dx, dy)
+      const minDist = a.radius + b.radius
+      if (dist === 0 || dist >= minDist) continue
+      const push = (minDist - dist) / minDist * 60 * dt
+      const nx = dx / dist
+      const ny = dy / dist
+      a.x -= nx * push
+      a.y -= ny * push
+      b.x += nx * push
+      b.y += ny * push
+    }
+  }
+}
+
 export function update(dt) {
   processQueue(world.hq, 'player', dt)
   processQueue(world.aiHq, 'ai', dt)
@@ -201,5 +222,6 @@ export function update(dt) {
 
   for (const t of world.tanks) t.update(dt, world)
   for (const c of world.collectors) c.update(dt, world)
+  applySeparation(dt)
   clampCamera()
 }
