@@ -1,3 +1,15 @@
+export function effectiveDamage(attacker, target) {
+  const base = attacker.attackDamage
+  const at = attacker.unitType
+  const tt = target.unitType
+  if (at === 'helicopter' && tt === 'tank') return base * 2
+  if (at === 'helicopter' && tt === 'hq') return base * 0.3
+  if (at === 'sam_truck' && tt === 'helicopter') return base * 3
+  if (at === 'sam_truck' && (tt === 'tank' || tt === 'hq')) return 0
+  if (at === 'tank' && tt === 'sam_truck') return base * 2
+  return base
+}
+
 export class Vehicle {
   constructor(x, y) {
     this.x = x
@@ -10,6 +22,7 @@ export class Vehicle {
     this.radius = 18
     this.faction = 'player'
     this.path = null
+    this.unitType = null
   }
 
   moveTo(tx, ty, dt) {
@@ -49,4 +62,3 @@ export class Vehicle {
     }
   }
 }
-

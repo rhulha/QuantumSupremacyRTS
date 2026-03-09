@@ -1,9 +1,10 @@
-import { Vehicle } from './vehicles.js'
+import { Vehicle, effectiveDamage } from './vehicles.js'
 import { ctx, camera } from './state.js'
 
 export class Tank extends Vehicle {
   constructor(x, y) {
     super(x, y)
+    this.unitType = 'tank'
     this.speed = 85
     this.radius = 18
     this.hp = 100
@@ -42,7 +43,7 @@ export class Tank extends Vehicle {
     if (nearest && nearestDist <= this.attackRange) {
       this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
       if (this.attackTimer <= 0) {
-        nearest.hp -= this.attackDamage
+        nearest.hp -= effectiveDamage(this, nearest)
         this.attackTimer = this.attackCooldown
       }
       return

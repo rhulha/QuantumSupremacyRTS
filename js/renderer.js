@@ -1,9 +1,17 @@
 import { canvas, ctx, camera, world, input } from './state.js'
 import { isVisible, isExplored, drawFog } from './fog.js'
 import { drawTank } from './tank.js'
+import { drawHelicopter } from './helicopter.js'
+import { drawSamTruck } from './sam_truck.js'
 import { drawCollector } from './collector.js'
 import { drawHQ, updateHQPanel } from './hq.js'
 import { drawTiles, drawGrid, drawWorldBounds, drawResource } from './map.js'
+
+function drawUnit(t) {
+  if (t.unitType === 'helicopter') drawHelicopter(t)
+  else if (t.unitType === 'sam_truck') drawSamTruck(t)
+  else drawTank(t)
+}
 
 function worldTransform() {
   ctx.setTransform(
@@ -62,7 +70,7 @@ export function render() {
   if (world.aiHq && isExplored(world.aiHq.x, world.aiHq.y)) drawHQ(world.aiHq, true)
   for (const t of world.tanks) {
     if (t.faction === 'ai' && !isVisible(t.x, t.y)) continue
-    drawTank(t)
+    drawUnit(t)
   }
   for (const c of world.collectors) {
     if (c.faction === 'ai' && !isVisible(c.x, c.y)) continue

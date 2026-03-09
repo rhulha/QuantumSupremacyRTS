@@ -59,5 +59,5 @@ export function updateHQPanel(hq) {
     hqPanel.classList.add('hidden')
   }
 
-  aiStatus.textContent = `AI: ${getAITankCount()} tanks`
+  aiStatus.textContent = `AI: ${getAITankCount()} units`
 }

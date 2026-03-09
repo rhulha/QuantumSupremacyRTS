@@ -79,6 +79,93 @@ function getTarget(tank) {
   return null
 }
 
+function getPlayerHelicopterTarget(unit) {
+  let nearest = null, nearestDist = Infinity
+  for (const t of world.tanks) {
+    if (t.faction !== 'player' || t.hp <= 0 || t.unitType !== 'helicopter') continue
+    if (!isAIKnown(t.x, t.y)) continue
+    const d = Math.hypot(t.x - unit.x, t.y - unit.y)
+    if (d < nearestDist) { nearestDist = d; nearest = t }
+  }
+  return nearest
+}
+
+function updateAITank(tank, unexplored) {
+  const target = getTarget(tank)
+  if (target) {
+    tank.aiScoutPos = null
+    const path = findPath(tank.x, tank.y, target.x, target.y)
+    if (path) {
+      tank.path = path
+      tank.targetX = target.x
+      tank.targetY = target.y
+    }
+  } else {
+    const needNew = !tank.aiScoutPos ||
+      Math.hypot(tank.x - tank.aiScoutPos.x, tank.y - tank.aiScoutPos.y) < 60 ||
+      isAIKnown(tank.aiScoutPos.x, tank.aiScoutPos.y)
+
+    if (needNew && unexplored.length > 0) {
+      const tile = unexplored[Math.floor(Math.random() * unexplored.length)]
+      tank.aiScoutPos = tile
+      const path = findPath(tank.x, tank.y, tile.x, tile.y)
+      if (path) {
+        tank.path = path
+        tank.targetX = tile.x
+        tank.targetY = tile.y
+      }
+    }
+  }
+}
+
+function updateAIHelicopter(heli, unexplored) {
+  const target = getTarget(heli)
+  if (target) {
+    heli.aiScoutPos = null
+    heli.targetX = target.x
+    heli.targetY = target.y
+  } else {
+    const needNew = !heli.aiScoutPos ||
+      Math.hypot(heli.x - heli.aiScoutPos.x, heli.y - heli.aiScoutPos.y) < 60 ||
+      isAIKnown(heli.aiScoutPos.x, heli.aiScoutPos.y)
+
+    if (needNew && unexplored.length > 0) {
+      const tile = unexplored[Math.floor(Math.random() * unexplored.length)]
+      heli.aiScoutPos = tile
+      heli.targetX = tile.x
+      heli.targetY = tile.y
+    }
+  }
+}
+
+function updateAISamTruck(sam, unexplored) {
+  const target = getPlayerHelicopterTarget(sam)
+  if (target) {
+    sam.aiScoutPos = null
+    const path = findPath(sam.x, sam.y, target.x, target.y)
+    if (path) {
+      sam.path = path
+      sam.targetX = target.x
+      sam.targetY = target.y
+    }
+  } else {
+    const needNew = !sam.aiScoutPos ||
+      Math.hypot(sam.x - sam.aiScoutPos.x, sam.y - sam.aiScoutPos.y) < 60 ||
+      isAIKnown(sam.aiScoutPos.x, sam.aiScoutPos.y)
+
+    if (needNew && unexplored.length > 0) {
+      const tile = unexplored[Math.floor(Math.random() * unexplored.length)]
+      sam.aiScoutPos = tile
+      const path = findPath(sam.x, sam.y, tile.x, tile.y)
+      if (path) {
+        sam.path = path
+        sam.targetX = tile.x
+        sam.targetY = tile.y
+      }
+    }
+  }
+}
+
 export function updateAI() {
   if (!aiExplored) return
 
@@ -89,11 +176,19 @@ export function updateAI() {
 
   const aiTanks = world.tanks.filter(t => t.faction === 'ai')
   const aiCollectors = world.collectors.filter(c => c.faction === 'ai')
+  const aiHelis = aiTanks.filter(t => t.unitType === 'helicopter').length
+  const aiSams = aiTanks.filter(t => t.unitType === 'sam_truck').length
 
   if (aiHq.buildQueue.length === 0) {
     if (aiCollectors.length < 2 && aiHq.resources >= aiHq.collectorBuildCost) {
       aiHq.resources -= aiHq.collectorBuildCost
       aiHq.buildQueue.push({ type: 'collector', timer: 4, totalTime: 4 })
+    } else if (aiHelis < 2 && aiHq.resources >= aiHq.helicopterBuildCost) {
+      aiHq.resources -= aiHq.helicopterBuildCost
+      aiHq.buildQueue.push({ type: 'helicopter', timer: 6, totalTime: 6 })
+    } else if (aiSams < 1 && aiHq.resources >= aiHq.samTruckBuildCost) {
+      aiHq.resources -= aiHq.samTruckBuildCost
+      aiHq.buildQueue.push({ type: 'sam_truck', timer: 7, totalTime: 7 })
     } else if (aiHq.resources >= aiHq.buildCost) {
       aiHq.resources -= aiHq.buildCost
       aiHq.buildQueue.push({ type: 'tank', timer: 5, totalTime: 5 })
@@ -107,33 +202,15 @@ export function updateAI() {
     }
   }
 
-  for (const tank of aiTanks) {
-    if (!tank.role) tank.role = ROLES[Math.floor(Math.random() * ROLES.length)]
+  for (const unit of aiTanks) {
+    if (!unit.role) unit.role = ROLES[Math.floor(Math.random() * ROLES.length)]
 
-    const target = getTarget(tank)
-    if (target) {
-      tank.aiScoutPos = null
-      const path = findPath(tank.x, tank.y, target.x, target.y)
-      if (path) {
-        tank.path = path
-        tank.targetX = target.x
-        tank.targetY = target.y
-      }
+    if (unit.unitType === 'helicopter') {
+      updateAIHelicopter(unit, unexplored)
+    } else if (unit.unitType === 'sam_truck') {
+      updateAISamTruck(unit, unexplored)
     } else {
-      const needNew = !tank.aiScoutPos ||
-        Math.hypot(tank.x - tank.aiScoutPos.x, tank.y - tank.aiScoutPos.y) < 60 ||
-        isAIKnown(tank.aiScoutPos.x, tank.aiScoutPos.y)
-
-      if (needNew && unexplored.length > 0) {
-        const tile = unexplored[Math.floor(Math.random() * unexplored.length)]
-        tank.aiScoutPos = tile
-        const path = findPath(tank.x, tank.y, tile.x, tile.y)
-        if (path) {
-          tank.path = path
-          tank.targetX = tile.x
-          tank.targetY = tile.y
-        }
-      }
+      updateAITank(unit, unexplored)
     }
   }
 }

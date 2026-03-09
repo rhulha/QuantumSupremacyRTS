@@ -1,6 +1,6 @@
 import { canvas, camera, input, world } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
-import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector } from './game.js'
+import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector, buildHelicopter, buildSamTruck } from './game.js'
 
 function isWall(wx, wy) {
   if (!world.map) return false
@@ -114,4 +114,12 @@ document.getElementById('btn-build-tank').addEventListener('click', () => {
 
 document.getElementById('btn-build-collector').addEventListener('click', () => {
   buildCollector()
+})
+
+document.getElementById('btn-build-helicopter').addEventListener('click', () => {
+  buildHelicopter()
+})
+
+document.getElementById('btn-build-sam-truck').addEventListener('click', () => {
+  buildSamTruck()
 })

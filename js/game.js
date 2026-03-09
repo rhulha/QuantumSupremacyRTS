@@ -2,6 +2,8 @@ import { world, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
 import { Tank } from './tank.js'
 import { Collector } from './collector.js'
+import { Helicopter } from './helicopter.js'
+import { SamTruck } from './sam_truck.js'
 import { Resource, HeadQuarters } from './entities.js'
 import { findPath } from './pathfinding.js'
 
@@ -22,13 +24,55 @@ function farthestCorner(hq) {
   }, { pos: corners[0], d: 0 }).pos
 }
 
+function spawnPosNear(hq) {
+  const cx = world.width / 2
+  const cy = world.height / 2
+
+  if (!world.map) {
+    const dx = cx - hq.x
+    const dy = cy - hq.y
+    const len = Math.hypot(dx, dy) || 1
+    return { x: hq.x + (dx / len) * 80 + rand(-20, 20), y: hq.y + (dy / len) * 80 + rand(-20, 20) }
+  }
+
+  const { tileSize, tiles, cols, rows } = world.map
+  const hqCol = Math.floor(hq.x / tileSize)
+  const hqRow = Math.floor(hq.y / tileSize)
+  const dcx = cx / tileSize - hqCol
+  const dcy = cy / tileSize - hqRow
+  const len = Math.hypot(dcx, dcy) || 1
+  const nx = dcx / len
+  const ny = dcy / len
+
+  const candidates = []
+  for (let dr = -2; dr <= 2; dr++) {
+    for (let dc = -2; dc <= 2; dc++) {
+      if (Math.abs(dr) < 1 && Math.abs(dc) < 1) continue
+      const col = hqCol + dc
+      const row = hqRow + dr
+      if (col < 0 || col >= cols || row < 0 || row >= rows) continue
+      if (tiles[row][col] === 'wall') continue
+      candidates.push({ col, row, score: dc * nx + dr * ny })
+    }
+  }
+
+  if (candidates.length === 0) return { x: hq.x, y: hq.y }
+
+  candidates.sort((a, b) => b.score - a.score)
+  const topN = Math.max(1, Math.ceil(candidates.length / 3))
+  const pick = candidates[Math.floor(Math.random() * topN)]
+  return { x: pick.col * tileSize + tileSize / 2, y: pick.row * tileSize + tileSize / 2 }
+}
+
 function spawnUnitsNear(hq) {
   for (let i = 0; i < 2; i++) {
-    const t = new Tank(hq.x + rand(-100, 100), hq.y + rand(-100, 100))
+    const tp = spawnPosNear(hq)
+    const t = new Tank(tp.x, tp.y)
     t.faction = hq === world.hq ? 'player' : 'ai'
     world.tanks.push(t)
 
-    const c = new Collector(hq.x + rand(-80, 80), hq.y + rand(-80, 80), hq)
+    const cp = spawnPosNear(hq)
+    const c = new Collector(cp.x, cp.y, hq)
     c.faction = t.faction
     world.collectors.push(c)
   }
@@ -146,15 +190,21 @@ export function issueMoveCommand(worldX, worldY) {
     const row = Math.floor(index / cols)
     const tx = startX + col * spacing
     const ty = startY + row * spacing
-    const path = findPath(v.x, v.y, tx, ty)
-    if (path) {
-      v.path = path
-      v.targetX = null
-      v.targetY = null
-    } else {
+    if (v.unitType === 'helicopter') {
       v.path = null
       v.targetX = tx
       v.targetY = ty
+    } else {
+      const path = findPath(v.x, v.y, tx, ty)
+      if (path) {
+        v.path = path
+        v.targetX = null
+        v.targetY = null
+      } else {
+        v.path = null
+        v.targetX = tx
+        v.targetY = ty
+      }
     }
   })
 }
@@ -173,6 +223,20 @@ export function buildCollector() {
   hq.buildQueue.push({ type: 'collector', timer: 4, totalTime: 4 })
 }
 
+export function buildHelicopter() {
+  const hq = world.hq
+  if (!hq || hq.resources < hq.helicopterBuildCost) return
+  hq.resources -= hq.helicopterBuildCost
+  hq.buildQueue.push({ type: 'helicopter', timer: 6, totalTime: 6 })
+}
+
+export function buildSamTruck() {
+  const hq = world.hq
+  if (!hq || hq.resources < hq.samTruckBuildCost) return
+  hq.resources -= hq.samTruckBuildCost
+  hq.buildQueue.push({ type: 'sam_truck', timer: 7, totalTime: 7 })
+}
+
 function processQueue(hq, faction, dt) {
   if (!hq) return
   for (const job of hq.buildQueue) {
@@ -182,19 +246,31 @@ function processQueue(hq, faction, dt) {
   hq.buildQueue = hq.buildQueue.filter(j => j.timer > 0)
   for (const job of done) {
     if (job.type === 'tank') {
-      const t = new Tank(hq.x + rand(-60, 60), hq.y + rand(-60, 60))
+      const p = spawnPosNear(hq)
+      const t = new Tank(p.x, p.y)
       t.faction = faction
       world.tanks.push(t)
     } else if (job.type === 'collector') {
-      const c = new Collector(hq.x + rand(-60, 60), hq.y + rand(-60, 60), hq)
+      const p = spawnPosNear(hq)
+      const c = new Collector(p.x, p.y, hq)
       c.faction = faction
       world.collectors.push(c)
+    } else if (job.type === 'helicopter') {
+      const p = spawnPosNear(hq)
+      const h = new Helicopter(p.x, p.y)
+      h.faction = faction
+      world.tanks.push(h)
+    } else if (job.type === 'sam_truck') {
+      const p = spawnPosNear(hq)
+      const s = new SamTruck(p.x, p.y)
+      s.faction = faction
+      world.tanks.push(s)
     }
   }
 }
 
 function applySeparation(dt) {
-  const all = [...world.tanks, ...world.collectors]
+  const all = [...world.tanks.filter(t => t.unitType !== 'helicopter'), ...world.collectors]
   for (let i = 0; i < all.length; i++) {
     for (let j = i + 1; j < all.length; j++) {
       const a = all[i], b = all[j]

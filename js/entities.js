@@ -15,8 +15,11 @@ export class HeadQuarters {
     this.selected = false
     this.resources = 100
     this.radius = 45
+    this.unitType = 'hq'
     this.buildCost = 50
     this.collectorBuildCost = 30
+    this.helicopterBuildCost = 80
+    this.samTruckBuildCost = 70
     this.hp = 500
     this.maxHp = 500
     this.buildQueue = []
