@@ -1,7 +1,7 @@
 import { update, init } from './game.js'
 import { render } from './renderer.js'
 import { loadMap } from './map.js'
-import { updateAI } from './ai.js'
+import { updateAI, initAI } from './ai.js'
 import { initFog, updateFog } from './fog.js'
 import { camera, world } from './state.js'
 import './input.js'
@@ -10,6 +10,7 @@ async function start() {
   await loadMap()
   init()
   initFog()
+  initAI()
 
   if (world.hq) {
     camera.x = world.hq.x

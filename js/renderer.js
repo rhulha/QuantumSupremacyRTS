@@ -1,5 +1,5 @@
 import { canvas, ctx, camera, world, input } from './state.js'
-import { getAIPhase, getAITankCount } from './ai.js'
+import { getAITankCount } from './ai.js'
 import { getFogGrids, isVisible, isExplored, SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECTOR } from './fog.js'
 
 const hqPanel = document.getElementById('hq-panel')
@@ -399,9 +399,5 @@ export function render() {
     hqPanel.classList.add('hidden')
   }
 
-  const phase = getAIPhase()
-  const count = getAITankCount()
-  aiStatus.textContent = phase === 'attacking'
-    ? `AI: ATTACKING! (${count} tanks)`
-    : `AI: Building (${count} / 40)`
+  aiStatus.textContent = `AI: ${getAITankCount()} tanks`
 }
