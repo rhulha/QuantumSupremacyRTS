@@ -12,7 +12,7 @@ window.addEventListener('resize', resize)
 export const world = {
   width: 3200,
   height: 2200,
-  tanks: [],
+  units: [],
   collectors: [],
   resources: [],
   hq: null,

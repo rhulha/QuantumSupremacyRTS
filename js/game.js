@@ -69,7 +69,7 @@ function spawnUnitsNear(hq) {
     const tp = spawnPosNear(hq)
     const t = new Tank(tp.x, tp.y)
     t.faction = hq === world.hq ? 'player' : 'ai'
-    world.tanks.push(t)
+    world.units.push(t)
 
     const cp = spawnPosNear(hq)
     const c = new Collector(cp.x, cp.y, hq)
@@ -154,18 +154,18 @@ function inRect(entity, rect) {
 
 export function setSelectionFromBox() {
   const rect = getSelectionRectWorld()
-  for (const t of world.tanks) t.selected = t.faction === 'player' && inRect(t, rect)
+  for (const t of world.units) t.selected = t.faction === 'player' && inRect(t, rect)
   if (world.hq) world.hq.selected = inRect(world.hq, rect)
 }
 
 export function clearSelection() {
-  for (const t of world.tanks) t.selected = false
+  for (const t of world.units) t.selected = false
   if (world.hq) world.hq.selected = false
 }
 
 export function getClickedEntity(worldX, worldY) {
   const all = [
-    ...world.tanks.filter(t => t.faction === 'player'),
+    ...world.units.filter(t => t.faction === 'player'),
     world.hq
   ].filter(Boolean)
   for (let i = all.length - 1; i >= 0; i--) {
@@ -176,7 +176,7 @@ export function getClickedEntity(worldX, worldY) {
 }
 
 export function issueMoveCommand(worldX, worldY) {
-  const selected = world.tanks.filter(t => t.selected)
+  const selected = world.units.filter(t => t.selected)
   if (!selected.length) return
 
   const cols = Math.ceil(Math.sqrt(selected.length))
@@ -249,7 +249,7 @@ function processQueue(hq, faction, dt) {
       const p = spawnPosNear(hq)
       const t = new Tank(p.x, p.y)
       t.faction = faction
-      world.tanks.push(t)
+      world.units.push(t)
     } else if (job.type === 'collector') {
       const p = spawnPosNear(hq)
       const c = new Collector(p.x, p.y, hq)
@@ -259,18 +259,18 @@ function processQueue(hq, faction, dt) {
       const p = spawnPosNear(hq)
       const h = new Helicopter(p.x, p.y)
       h.faction = faction
-      world.tanks.push(h)
+      world.units.push(h)
     } else if (job.type === 'sam_truck') {
       const p = spawnPosNear(hq)
       const s = new SamTruck(p.x, p.y)
       s.faction = faction
-      world.tanks.push(s)
+      world.units.push(s)
     }
   }
 }
 
 function applySeparation(dt) {
-  const all = [...world.tanks.filter(t => t.unitType !== 'helicopter'), ...world.collectors]
+  const all = [...world.units.filter(t => t.unitType !== 'helicopter'), ...world.collectors]
   for (let i = 0; i < all.length; i++) {
     for (let j = i + 1; j < all.length; j++) {
       const a = all[i], b = all[j]
@@ -294,10 +294,10 @@ export function update(dt) {
   processQueue(world.hq, 'player', dt)
   processQueue(world.aiHq, 'ai', dt)
 
-  world.tanks = world.tanks.filter(t => t.hp > 0)
+  world.units = world.units.filter(t => t.hp > 0)
   world.collectors = world.collectors.filter(c => c.hp > 0)
 
-  for (const t of world.tanks) t.update(dt, world)
+  for (const t of world.units) t.update(dt, world)
   for (const c of world.collectors) c.update(dt, world)
   applySeparation(dt)
 }

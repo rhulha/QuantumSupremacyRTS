@@ -1,9 +1,10 @@
-import { Vehicle } from './vehicles.js'
+import { Vehicle, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 
 export class Collector extends Vehicle {
   constructor(x, y, homeHq) {
     super(x, y)
+    this.unitType = 'collector'
     this.speed = 60
     this.radius = 14
     this.carrying = 0
@@ -92,14 +93,7 @@ export function drawCollector(c) {
 
   ctx.restore()
 
-  if (c.hp < c.maxHp) {
-    const bw = 24, bh = 3
-    const bx = c.x - bw / 2, by = c.y - 24
-    ctx.fillStyle = '#222'
-    ctx.fillRect(bx, by, bw, bh)
-    ctx.fillStyle = c.faction === 'ai' ? '#c04040' : '#40c040'
-    ctx.fillRect(bx, by, bw * c.hp / c.maxHp, bh)
-  }
+  drawHealthBar(c, 24, 3, 24)
 
   if (c.targetResource && c.collectState === 'fetching') {
     ctx.strokeStyle = 'rgba(80,200,255,0.3)'

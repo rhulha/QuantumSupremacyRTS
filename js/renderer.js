@@ -22,7 +22,7 @@ function worldTransform() {
 }
 
 function drawMoveMarkers() {
-  for (const tank of world.tanks) {
+  for (const tank of world.units) {
     if (tank.faction !== 'player' || tank.targetX == null) continue
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'
     ctx.lineWidth = 2 / camera.zoom
@@ -68,7 +68,7 @@ export function render() {
     if (isExplored(res.x, res.y)) drawResource(res)
   }
   if (world.aiHq && isExplored(world.aiHq.x, world.aiHq.y)) drawHQ(world.aiHq, true)
-  for (const t of world.tanks) {
+  for (const t of world.units) {
     if (t.faction === 'ai' && !isVisible(t.x, t.y)) continue
     drawUnit(t)
   }
@@ -82,7 +82,7 @@ export function render() {
   worldTransform()
 
   if (world.hq) drawHQ(world.hq)
-  for (const t of world.tanks) {
+  for (const t of world.units) {
     if (t.faction === 'player') drawUnit(t)
   }
   for (const c of world.collectors) {

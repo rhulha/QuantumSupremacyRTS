@@ -1,4 +1,4 @@
-import { Vehicle, effectiveDamage } from './vehicles.js'
+import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 
 export class Helicopter extends Vehicle {
@@ -31,12 +31,12 @@ export class Helicopter extends Vehicle {
 
     const enemies = this.faction === 'player'
       ? [
-          ...world.tanks.filter(t => t.faction === 'ai' && t.hp > 0),
+          ...world.units.filter(t => t.faction === 'ai' && t.hp > 0),
           ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
           world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
         ].filter(Boolean)
       : [
-          ...world.tanks.filter(t => t.faction === 'player' && t.hp > 0),
+          ...world.units.filter(t => t.faction === 'player' && t.hp > 0),
           ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
           world.hq && world.hq.hp > 0 ? world.hq : null
         ].filter(Boolean)
@@ -156,12 +156,5 @@ export function drawHelicopter(heli) {
     ctx.stroke()
   }
 
-  if (heli.hp < heli.maxHp) {
-    const bw = 28, bh = 4
-    const bx = heli.x - bw / 2, by = heli.y - 30
-    ctx.fillStyle = '#222'
-    ctx.fillRect(bx, by, bw, bh)
-    ctx.fillStyle = heli.faction === 'ai' ? '#c04040' : '#40c040'
-    ctx.fillRect(bx, by, bw * heli.hp / heli.maxHp, bh)
-  }
+  drawHealthBar(heli, 28, 4, 30)
 }

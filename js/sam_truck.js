@@ -1,4 +1,4 @@
-import { Vehicle, effectiveDamage } from './vehicles.js'
+import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 
 export class SamTruck extends Vehicle {
@@ -19,7 +19,7 @@ export class SamTruck extends Vehicle {
     this.attackTimer = Math.max(0, this.attackTimer - dt)
 
     const enemyFaction = this.faction === 'player' ? 'ai' : 'player'
-    const helicopters = world.tanks.filter(
+    const helicopters = world.units.filter(
       t => t.faction === enemyFaction && t.hp > 0 && t.unitType === 'helicopter'
     )
 
@@ -80,12 +80,5 @@ export function drawSamTruck(truck) {
     ctx.stroke()
   }
 
-  if (truck.hp < truck.maxHp) {
-    const bw = 36, bh = 4
-    const bx = truck.x - bw / 2, by = truck.y - 32
-    ctx.fillStyle = '#222'
-    ctx.fillRect(bx, by, bw, bh)
-    ctx.fillStyle = truck.faction === 'ai' ? '#c04040' : '#40c040'
-    ctx.fillRect(bx, by, bw * truck.hp / truck.maxHp, bh)
-  }
+  drawHealthBar(truck, 36, 4, 32)
 }

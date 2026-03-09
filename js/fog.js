@@ -19,9 +19,9 @@ export function initFog() {
   visGrid = Array.from({ length: gridRows }, () => new Uint8Array(gridCols))
 }
 
-function sightOf(src) {
-  if (src === world.hq) return SIGHT_HQ
-  if (src.radius === 14) return SIGHT_COLLECTOR
+export function sightOf(src) {
+  if (src.unitType === 'hq') return SIGHT_HQ
+  if (src.unitType === 'collector') return SIGHT_COLLECTOR
   return SIGHT_TANK
 }
 
@@ -31,7 +31,7 @@ export function updateFog() {
   for (let r = 0; r < gridRows; r++) visGrid[r].fill(0)
 
   const sources = [
-    ...world.tanks.filter(t => t.faction === 'player'),
+    ...world.units.filter(t => t.faction === 'player'),
     ...world.collectors.filter(c => c.faction === 'player'),
     world.hq
   ].filter(Boolean)
@@ -117,13 +117,13 @@ export function drawFog() {
   fc.globalCompositeOperation = 'destination-out'
 
   const sources = [
-    ...world.tanks.filter(t => t.faction === 'player'),
+    ...world.units.filter(t => t.faction === 'player'),
     ...world.collectors.filter(c => c.faction === 'player'),
     world.hq
   ].filter(Boolean)
 
   for (const src of sources) {
-    const r = src === world.hq ? SIGHT_HQ : src.radius === 14 ? SIGHT_COLLECTOR : SIGHT_TANK
+    const r = sightOf(src)
     const grad = fc.createRadialGradient(src.x, src.y, r * 0.65, src.x, src.y, r)
     grad.addColorStop(0, 'rgba(0,0,0,1)')
     grad.addColorStop(1, 'rgba(0,0,0,0)')

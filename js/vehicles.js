@@ -1,3 +1,15 @@
+import { ctx } from './state.js'
+
+export function drawHealthBar(unit, bw, bh, yOffset) {
+  if (unit.hp >= unit.maxHp) return
+  const bx = unit.x - bw / 2
+  const by = unit.y - yOffset
+  ctx.fillStyle = '#222'
+  ctx.fillRect(bx, by, bw, bh)
+  ctx.fillStyle = unit.faction === 'ai' ? '#c04040' : '#40c040'
+  ctx.fillRect(bx, by, bw * unit.hp / unit.maxHp, bh)
+}
+
 export function effectiveDamage(attacker, target) {
   const base = attacker.attackDamage
   const at = attacker.unitType

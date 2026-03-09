@@ -1,5 +1,5 @@
 import { world } from './state.js'
-import { SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECTOR } from './fog.js'
+import { sightOf } from './fog.js'
 import { findPath } from './pathfinding.js'
 
 let aiExplored = null
@@ -18,13 +18,13 @@ export function initAI() {
 
 function updateAIExplored() {
   const sources = [
-    ...world.tanks.filter(t => t.faction === 'ai'),
+    ...world.units.filter(t => t.faction === 'ai'),
     ...world.collectors.filter(c => c.faction === 'ai'),
     world.aiHq
   ].filter(Boolean)
 
   for (const src of sources) {
-    const r = src === world.aiHq ? SIGHT_HQ : src.radius === 14 ? SIGHT_COLLECTOR : SIGHT_TANK
+    const r = sightOf(src)
     const minCol = Math.max(0, Math.floor((src.x - r) / ts))
     const maxCol = Math.min(gridCols - 1, Math.ceil((src.x + r) / ts))
     const minRow = Math.max(0, Math.floor((src.y - r) / ts))
@@ -59,7 +59,7 @@ function getTarget(tank) {
     }
     case 'tank_hunter': {
       let nearest = null, nearestDist = Infinity
-      for (const t of world.tanks) {
+      for (const t of world.units) {
         if (t.faction !== 'player' || t.hp <= 0 || !isAIKnown(t.x, t.y)) continue
         const d = Math.hypot(t.x - tank.x, t.y - tank.y)
         if (d < nearestDist) { nearestDist = d; nearest = t }
@@ -81,7 +81,7 @@ function getTarget(tank) {
 
 function getPlayerHelicopterTarget(unit) {
   let nearest = null, nearestDist = Infinity
-  for (const t of world.tanks) {
+  for (const t of world.units) {
     if (t.faction !== 'player' || t.hp <= 0 || t.unitType !== 'helicopter') continue
     if (!isAIKnown(t.x, t.y)) continue
     const d = Math.hypot(t.x - unit.x, t.y - unit.y)
@@ -174,7 +174,7 @@ export function updateAI() {
   const aiHq = world.aiHq
   if (!aiHq) return
 
-  const aiTanks = world.tanks.filter(t => t.faction === 'ai')
+  const aiTanks = world.units.filter(t => t.faction === 'ai')
   const aiCollectors = world.collectors.filter(c => c.faction === 'ai')
   const aiHelis = aiTanks.filter(t => t.unitType === 'helicopter').length
   const aiSams = aiTanks.filter(t => t.unitType === 'sam_truck').length
@@ -215,4 +215,4 @@ export function updateAI() {
   }
 }
 
-export function getAITankCount() { return world.tanks.filter(t => t.faction === 'ai').length }
+export function getAITankCount() { return world.units.filter(t => t.faction === 'ai').length }

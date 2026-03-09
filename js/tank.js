@@ -1,4 +1,4 @@
-import { Vehicle, effectiveDamage } from './vehicles.js'
+import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 
 export class Tank extends Vehicle {
@@ -20,12 +20,12 @@ export class Tank extends Vehicle {
 
     const enemies = this.faction === 'player'
       ? [
-          ...world.tanks.filter(t => t.faction === 'ai' && t.hp > 0),
+          ...world.units.filter(t => t.faction === 'ai' && t.hp > 0),
           ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
           world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
         ].filter(Boolean)
       : [
-          ...world.tanks.filter(t => t.faction === 'player' && t.hp > 0),
+          ...world.units.filter(t => t.faction === 'player' && t.hp > 0),
           ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
           world.hq && world.hq.hp > 0 ? world.hq : null
         ].filter(Boolean)
@@ -88,12 +88,5 @@ export function drawTank(tank) {
     ctx.stroke()
   }
 
-  if (tank.hp < tank.maxHp) {
-    const bw = 36, bh = 4
-    const bx = tank.x - bw / 2, by = tank.y - 32
-    ctx.fillStyle = '#222'
-    ctx.fillRect(bx, by, bw, bh)
-    ctx.fillStyle = tank.faction === 'ai' ? '#c04040' : '#40c040'
-    ctx.fillRect(bx, by, bw * tank.hp / tank.maxHp, bh)
-  }
+  drawHealthBar(tank, 36, 4, 32)
 }
