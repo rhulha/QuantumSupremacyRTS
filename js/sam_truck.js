@@ -1,5 +1,7 @@
 import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
+import { findNearest } from './combat-utils.js'
+import { drawSelectionRing } from './render-utils.js'
 
 export class SamTruck extends Vehicle {
   constructor(x, y) {
@@ -23,17 +25,8 @@ export class SamTruck extends Vehicle {
       t => t.faction === enemyFaction && t.hp > 0 && t.unitType === 'helicopter'
     )
 
-    let nearest = null
-    let nearestDist = Infinity
-    for (const e of helicopters) {
-      const d = Math.hypot(e.x - this.x, e.y - this.y)
-      if (d < nearestDist) {
-        nearestDist = d
-        nearest = e
-      }
-    }
-
-    if (nearest && nearestDist <= this.attackRange) {
+    const nearest = findNearest(this.x, this.y, helicopters)
+    if (nearest && Math.hypot(nearest.x - this.x, nearest.y - this.y) <= this.attackRange) {
       this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
       if (this.attackTimer <= 0) {
         nearest.hp -= effectiveDamage(this, nearest)
@@ -72,13 +65,7 @@ export function drawSamTruck(truck) {
 
   ctx.restore()
 
-  if (truck.selected) {
-    ctx.strokeStyle = 'rgba(140,255,140,0.9)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(truck.x, truck.y, truck.radius + 10, 0, Math.PI * 2)
-    ctx.stroke()
-  }
+  if (truck.selected) drawSelectionRing(truck, 'rgba(140,255,140,0.9)')
 
   drawHealthBar(truck, 36, 4, 32)
 }

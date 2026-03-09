@@ -1,5 +1,6 @@
 import { canvas, ctx, camera, world } from './state.js'
 import { viewportBounds } from './render-utils.js'
+import { getFactionEntities } from './combat-utils.js'
 
 export const SIGHT_HQ = 500
 export const SIGHT_TANK = 380
@@ -30,13 +31,7 @@ export function updateFog() {
 
   for (let r = 0; r < gridRows; r++) visGrid[r].fill(0)
 
-  const sources = [
-    ...world.units.filter(t => t.faction === 'player'),
-    ...world.collectors.filter(c => c.faction === 'player'),
-    world.hq
-  ].filter(Boolean)
-
-  for (const src of sources) {
+  for (const src of getFactionEntities('player')) {
     const r = sightOf(src)
     const minCol = Math.max(0, Math.floor((src.x - r) / ts))
     const maxCol = Math.min(gridCols - 1, Math.ceil((src.x + r) / ts))
@@ -116,13 +111,7 @@ export function drawFog() {
 
   fc.globalCompositeOperation = 'destination-out'
 
-  const sources = [
-    ...world.units.filter(t => t.faction === 'player'),
-    ...world.collectors.filter(c => c.faction === 'player'),
-    world.hq
-  ].filter(Boolean)
-
-  for (const src of sources) {
+  for (const src of getFactionEntities('player')) {
     const r = sightOf(src)
     const grad = fc.createRadialGradient(src.x, src.y, r * 0.65, src.x, src.y, r)
     grad.addColorStop(0, 'rgba(0,0,0,1)')

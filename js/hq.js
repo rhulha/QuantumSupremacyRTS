@@ -1,5 +1,6 @@
 import { ctx, camera } from './state.js'
 import { getAITankCount } from './ai.js'
+import { drawSelectionRing } from './render-utils.js'
 
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
@@ -29,13 +30,7 @@ export function drawHQ(hq, ai = false) {
 
   ctx.restore()
 
-  if (hq.selected) {
-    ctx.strokeStyle = 'rgba(100,160,255,0.9)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(hq.x, hq.y, hq.radius + 10, 0, Math.PI * 2)
-    ctx.stroke()
-  }
+  if (hq.selected) drawSelectionRing(hq, 'rgba(100,160,255,0.9)')
 
   if (hq.hp < hq.maxHp) {
     const bw = 80, bh = 6

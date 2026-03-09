@@ -1,5 +1,7 @@
 import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
+import { getEnemies, findNearest } from './combat-utils.js'
+import { drawSelectionRing } from './render-utils.js'
 
 export class Helicopter extends Vehicle {
   constructor(x, y) {
@@ -25,33 +27,12 @@ export class Helicopter extends Vehicle {
     }
   }
 
-  update(dt, world) {
+  update(dt) {
     this.attackTimer = Math.max(0, this.attackTimer - dt)
     this.rotorAngle += dt * 12
 
-    const enemies = this.faction === 'player'
-      ? [
-          ...world.units.filter(t => t.faction === 'ai' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
-          world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
-        ].filter(Boolean)
-      : [
-          ...world.units.filter(t => t.faction === 'player' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
-          world.hq && world.hq.hp > 0 ? world.hq : null
-        ].filter(Boolean)
-
-    let nearest = null
-    let nearestDist = Infinity
-    for (const e of enemies) {
-      const d = Math.hypot(e.x - this.x, e.y - this.y)
-      if (d < nearestDist) {
-        nearestDist = d
-        nearest = e
-      }
-    }
-
-    if (nearest && nearestDist <= this.attackRange) {
+    const nearest = findNearest(this.x, this.y, getEnemies(this))
+    if (nearest && Math.hypot(nearest.x - this.x, nearest.y - this.y) <= this.attackRange) {
       this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
       if (this.attackTimer <= 0) {
         nearest.hp -= effectiveDamage(this, nearest)
@@ -148,13 +129,7 @@ export function drawHelicopter(heli) {
 
   ctx.restore()
 
-  if (heli.selected) {
-    ctx.strokeStyle = 'rgba(80,255,255,0.9)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(heli.x, heli.y, heli.radius + 10, 0, Math.PI * 2)
-    ctx.stroke()
-  }
+  if (heli.selected) drawSelectionRing(heli, 'rgba(80,255,255,0.9)')
 
   drawHealthBar(heli, 28, 4, 30)
 }

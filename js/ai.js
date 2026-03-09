@@ -1,5 +1,6 @@
 import { world } from './state.js'
 import { sightOf } from './fog.js'
+import { getFactionEntities } from './combat-utils.js'
 import { findPath } from './pathfinding.js'
 
 let aiExplored = null
@@ -17,13 +18,7 @@ export function initAI() {
 }
 
 function updateAIExplored() {
-  const sources = [
-    ...world.units.filter(t => t.faction === 'ai'),
-    ...world.collectors.filter(c => c.faction === 'ai'),
-    world.aiHq
-  ].filter(Boolean)
-
-  for (const src of sources) {
+  for (const src of getFactionEntities('ai')) {
     const r = sightOf(src)
     const minCol = Math.max(0, Math.floor((src.x - r) / ts))
     const maxCol = Math.min(gridCols - 1, Math.ceil((src.x + r) / ts))

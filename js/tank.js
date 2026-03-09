@@ -1,5 +1,7 @@
 import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
+import { getEnemies, findNearest } from './combat-utils.js'
+import { drawSelectionRing } from './render-utils.js'
 
 export class Tank extends Vehicle {
   constructor(x, y) {
@@ -15,32 +17,11 @@ export class Tank extends Vehicle {
     this.attackTimer = 0
   }
 
-  update(dt, world) {
+  update(dt) {
     this.attackTimer = Math.max(0, this.attackTimer - dt)
 
-    const enemies = this.faction === 'player'
-      ? [
-          ...world.units.filter(t => t.faction === 'ai' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
-          world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
-        ].filter(Boolean)
-      : [
-          ...world.units.filter(t => t.faction === 'player' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
-          world.hq && world.hq.hp > 0 ? world.hq : null
-        ].filter(Boolean)
-
-    let nearest = null
-    let nearestDist = Infinity
-    for (const e of enemies) {
-      const d = Math.hypot(e.x - this.x, e.y - this.y)
-      if (d < nearestDist) {
-        nearestDist = d
-        nearest = e
-      }
-    }
-
-    if (nearest && nearestDist <= this.attackRange) {
+    const nearest = findNearest(this.x, this.y, getEnemies(this))
+    if (nearest && Math.hypot(nearest.x - this.x, nearest.y - this.y) <= this.attackRange) {
       this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
       if (this.attackTimer <= 0) {
         nearest.hp -= effectiveDamage(this, nearest)
@@ -80,13 +61,7 @@ export function drawTank(tank) {
 
   ctx.restore()
 
-  if (tank.selected) {
-    ctx.strokeStyle = 'rgba(180,255,180,0.95)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(tank.x, tank.y, tank.radius + 10, 0, Math.PI * 2)
-    ctx.stroke()
-  }
+  if (tank.selected) drawSelectionRing(tank, 'rgba(180,255,180,0.95)')
 
   drawHealthBar(tank, 36, 4, 32)
 }
