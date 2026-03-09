@@ -1,4 +1,5 @@
 import { canvas, ctx, camera, world, input } from './state.js'
+import { drawTank } from './tank.js'
 import { getAITankCount } from './ai.js'
 import { getFogGrids, isVisible, isExplored, SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECTOR } from './fog.js'
 
@@ -125,51 +126,6 @@ function drawResource(res) {
   ctx.font = `${11 / camera.zoom}px monospace`
   ctx.textAlign = 'center'
   ctx.fillText(Math.ceil(res.amount), res.x, res.y - res.radius - 4 / camera.zoom)
-}
-
-function drawTank(tank) {
-  const ai = tank.faction === 'ai'
-  ctx.save()
-  ctx.translate(tank.x, tank.y)
-  ctx.rotate(tank.angle)
-
-  ctx.fillStyle = ai ? '#c03030' : (tank.selected ? '#8ef58e' : '#5ea05e')
-  ctx.strokeStyle = ai ? '#600000' : (tank.selected ? '#d8ffd8' : '#1f301f')
-  ctx.lineWidth = 2 / camera.zoom
-
-  ctx.beginPath()
-  ctx.roundRect(-20, -14, 40, 28, 6 / camera.zoom)
-  ctx.fill()
-  ctx.stroke()
-
-  ctx.fillStyle = ai ? '#6a1010' : '#2f4a2f'
-  ctx.fillRect(-10, -10, 20, 20)
-
-  ctx.strokeStyle = ai ? '#ffaaaa' : '#d7e6d7'
-  ctx.lineWidth = 4 / camera.zoom
-  ctx.beginPath()
-  ctx.moveTo(0, 0)
-  ctx.lineTo(28, 0)
-  ctx.stroke()
-
-  ctx.restore()
-
-  if (tank.selected) {
-    ctx.strokeStyle = 'rgba(180,255,180,0.95)'
-    ctx.lineWidth = 2 / camera.zoom
-    ctx.beginPath()
-    ctx.arc(tank.x, tank.y, tank.radius + 10, 0, Math.PI * 2)
-    ctx.stroke()
-  }
-
-  if (tank.hp < tank.maxHp) {
-    const bw = 36, bh = 4
-    const bx = tank.x - bw / 2, by = tank.y - 32
-    ctx.fillStyle = '#222'
-    ctx.fillRect(bx, by, bw, bh)
-    ctx.fillStyle = tank.faction === 'ai' ? '#c04040' : '#40c040'
-    ctx.fillRect(bx, by, bw * tank.hp / tank.maxHp, bh)
-  }
 }
 
 function drawCollector(c) {

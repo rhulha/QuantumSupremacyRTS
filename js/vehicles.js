@@ -50,57 +50,6 @@ export class Vehicle {
   }
 }
 
-export class Tank extends Vehicle {
-  constructor(x, y) {
-    super(x, y)
-    this.speed = 85
-    this.radius = 18
-    this.hp = 100
-    this.maxHp = 100
-    this.attackRange = 200
-    this.attackDamage = 15
-    this.attackCooldown = 1.5
-    this.attackTimer = 0
-  }
-
-  update(dt, world) {
-    this.attackTimer = Math.max(0, this.attackTimer - dt)
-
-    const enemies = this.faction === 'player'
-      ? [
-          ...world.tanks.filter(t => t.faction === 'ai' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'ai' && c.hp > 0),
-          world.aiHq && world.aiHq.hp > 0 ? world.aiHq : null
-        ].filter(Boolean)
-      : [
-          ...world.tanks.filter(t => t.faction === 'player' && t.hp > 0),
-          ...world.collectors.filter(c => c.faction === 'player' && c.hp > 0),
-          world.hq && world.hq.hp > 0 ? world.hq : null
-        ].filter(Boolean)
-
-    let nearest = null
-    let nearestDist = Infinity
-    for (const e of enemies) {
-      const d = Math.hypot(e.x - this.x, e.y - this.y)
-      if (d < nearestDist) {
-        nearestDist = d
-        nearest = e
-      }
-    }
-
-    if (nearest && nearestDist <= this.attackRange) {
-      this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x)
-      if (this.attackTimer <= 0) {
-        nearest.hp -= this.attackDamage
-        this.attackTimer = this.attackCooldown
-      }
-      return
-    }
-
-    this.updateMove(dt)
-  }
-}
-
 export class Collector extends Vehicle {
   constructor(x, y, homeHq) {
     super(x, y)

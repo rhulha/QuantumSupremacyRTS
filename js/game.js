@@ -1,6 +1,7 @@
 import { world, input } from './state.js'
 import { screenToWorld, clampCamera } from './camera.js'
-import { Tank, Collector } from './vehicles.js'
+import { Tank } from './tank.js'
+import { Collector } from './vehicles.js'
 import { Resource, HeadQuarters } from './entities.js'
 import { findPath } from './pathfinding.js'
 
