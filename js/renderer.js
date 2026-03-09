@@ -83,7 +83,7 @@ export function render() {
 
   if (world.hq) drawHQ(world.hq)
   for (const t of world.tanks) {
-    if (t.faction === 'player') drawTank(t)
+    if (t.faction === 'player') drawUnit(t)
   }
   for (const c of world.collectors) {
     if (c.faction === 'player') drawCollector(c)
