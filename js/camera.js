@@ -1,4 +1,4 @@
-import { canvas, camera, world } from './state.js'
+import { canvas, camera } from './state.js'
 
 export function screenToWorld(screenX, screenY) {
   return {
@@ -14,9 +14,4 @@ export function worldToScreen(worldX, worldY) {
   }
 }
 
-export function clampCamera() {
-  const halfW = canvas.width / 2 / camera.zoom
-  const halfH = canvas.height / 2 / camera.zoom
-  camera.x = Math.max(halfW, Math.min(world.width - halfW, camera.x))
-  camera.y = Math.max(halfH, Math.min(world.height - halfH, camera.y))
-}
+

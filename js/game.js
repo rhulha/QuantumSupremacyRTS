@@ -1,5 +1,5 @@
 import { world, input } from './state.js'
-import { screenToWorld, clampCamera } from './camera.js'
+import { screenToWorld } from './camera.js'
 import { Tank } from './tank.js'
 import { Collector } from './collector.js'
 import { Helicopter } from './helicopter.js'
@@ -300,5 +300,4 @@ export function update(dt) {
   for (const t of world.tanks) t.update(dt, world)
   for (const c of world.collectors) c.update(dt, world)
   applySeparation(dt)
-  clampCamera()
 }

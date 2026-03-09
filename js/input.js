@@ -1,5 +1,5 @@
 import { canvas, camera, input, world } from './state.js'
-import { screenToWorld, clampCamera } from './camera.js'
+import { screenToWorld } from './camera.js'
 import { issueMoveCommand, setSelectionFromBox, clearSelection, getClickedEntity, buildTank, buildCollector, buildHelicopter, buildSamTruck } from './game.js'
 
 function isWall(wx, wy) {
@@ -105,7 +105,6 @@ canvas.addEventListener('wheel', e => {
 
   camera.x += before.x - after.x
   camera.y += before.y - after.y
-  clampCamera()
 }, { passive: false })
 
 document.getElementById('btn-build-tank').addEventListener('click', () => {
