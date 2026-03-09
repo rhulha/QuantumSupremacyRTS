@@ -2,6 +2,7 @@ import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 import { getEnemies, findNearest } from './combat-utils.js'
 import { drawSelectionRing } from './render-utils.js'
+import { playSound } from './audio.js'
 
 export class Helicopter extends Vehicle {
   constructor(x, y) {
@@ -37,6 +38,7 @@ export class Helicopter extends Vehicle {
       if (this.attackTimer <= 0) {
         nearest.hp -= effectiveDamage(this, nearest)
         this.attackTimer = this.attackCooldown
+        playSound('heli_shoot', 0.4)
       }
       return
     }

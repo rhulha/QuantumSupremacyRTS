@@ -2,6 +2,7 @@ import { Vehicle, effectiveDamage, drawHealthBar } from './vehicles.js'
 import { ctx, camera } from './state.js'
 import { findNearest } from './combat-utils.js'
 import { drawSelectionRing } from './render-utils.js'
+import { playSound } from './audio.js'
 
 export class SamTruck extends Vehicle {
   constructor(x, y) {
@@ -31,6 +32,7 @@ export class SamTruck extends Vehicle {
       if (this.attackTimer <= 0) {
         nearest.hp -= effectiveDamage(this, nearest)
         this.attackTimer = this.attackCooldown
+        playSound('sam_shoot', 0.5)
       }
       return
     }
