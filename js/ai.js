@@ -1,5 +1,6 @@
 import { world } from './state.js'
 import { SIGHT_HQ, SIGHT_TANK, SIGHT_COLLECTOR } from './fog.js'
+import { findPath } from './pathfinding.js'
 
 let aiExplored = null
 let gridCols = 0
@@ -111,9 +112,13 @@ export function updateAI() {
 
     const target = getTarget(tank)
     if (target) {
-      tank.targetX = target.x
-      tank.targetY = target.y
       tank.aiScoutPos = null
+      const path = findPath(tank.x, tank.y, target.x, target.y)
+      if (path) {
+        tank.path = path
+        tank.targetX = target.x
+        tank.targetY = target.y
+      }
     } else {
       const needNew = !tank.aiScoutPos ||
         Math.hypot(tank.x - tank.aiScoutPos.x, tank.y - tank.aiScoutPos.y) < 60 ||
@@ -122,8 +127,12 @@ export function updateAI() {
       if (needNew && unexplored.length > 0) {
         const tile = unexplored[Math.floor(Math.random() * unexplored.length)]
         tank.aiScoutPos = tile
-        tank.targetX = tile.x
-        tank.targetY = tile.y
+        const path = findPath(tank.x, tank.y, tile.x, tile.y)
+        if (path) {
+          tank.path = path
+          tank.targetX = tile.x
+          tank.targetY = tile.y
+        }
       }
     }
   }
