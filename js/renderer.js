@@ -1,5 +1,6 @@
 import { canvas, ctx, camera, world, input } from './state.js'
 import { getAIPhase, getAITankCount } from './ai.js'
+import { getFogGrids, isVisible, isExplored } from './fog.js'
 
 const hqPanel = document.getElementById('hq-panel')
 const hqResSpan = document.getElementById('hq-resources')
@@ -14,14 +15,26 @@ const TILE_COLORS = {
   head_quarter:    '#2a3d60',
 }
 
+let fogCanvas = null
+let fogCtx = null
+
+function worldTransform() {
+  ctx.setTransform(
+    camera.zoom, 0, 0, camera.zoom,
+    canvas.width / 2 - camera.x * camera.zoom,
+    canvas.height / 2 - camera.y * camera.zoom
+  )
+}
+
+function viewportBounds() {
+  const hw = canvas.width / 2 / camera.zoom
+  const hh = canvas.height / 2 / camera.zoom
+  return { left: camera.x - hw, right: camera.x + hw, top: camera.y - hh, bottom: camera.y + hh }
+}
+
 function drawTiles() {
   const { cols, rows, tileSize, tiles } = world.map
-  const viewHalfW = canvas.width / 2 / camera.zoom
-  const viewHalfH = canvas.height / 2 / camera.zoom
-  const left = camera.x - viewHalfW
-  const right = camera.x + viewHalfW
-  const top = camera.y - viewHalfH
-  const bottom = camera.y + viewHalfH
+  const { left, right, top, bottom } = viewportBounds()
 
   const colStart = Math.max(0, Math.floor(left / tileSize))
   const colEnd = Math.min(cols - 1, Math.ceil(right / tileSize))
@@ -54,12 +67,7 @@ function drawTiles() {
 
 function drawGrid() {
   const grid = 100
-  const viewHalfW = canvas.width / 2 / camera.zoom
-  const viewHalfH = canvas.height / 2 / camera.zoom
-  const left = camera.x - viewHalfW
-  const right = camera.x + viewHalfW
-  const top = camera.y - viewHalfH
-  const bottom = camera.y + viewHalfH
+  const { left, right, top, bottom } = viewportBounds()
 
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'
   ctx.lineWidth = 1 / camera.zoom
@@ -152,15 +160,6 @@ function drawTank(tank) {
     ctx.arc(tank.x, tank.y, tank.radius + 10, 0, Math.PI * 2)
     ctx.stroke()
   }
-
-  if (tank.targetX != null) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'
-    ctx.lineWidth = 1.5 / camera.zoom
-    ctx.beginPath()
-    ctx.moveTo(tank.x, tank.y)
-    ctx.lineTo(tank.targetX, tank.targetY)
-    ctx.stroke()
-  }
 }
 
 function drawCollector(c) {
@@ -246,11 +245,18 @@ function drawHQ(hq, ai = false) {
 
 function drawMoveMarkers() {
   for (const tank of world.tanks) {
-    if (tank.targetX == null) continue
+    if (tank.faction !== 'player' || tank.targetX == null) continue
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'
     ctx.lineWidth = 2 / camera.zoom
     ctx.beginPath()
     ctx.arc(tank.targetX, tank.targetY, 10, 0, Math.PI * 2)
+    ctx.stroke()
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'
+    ctx.lineWidth = 1.5 / camera.zoom
+    ctx.beginPath()
+    ctx.moveTo(tank.x, tank.y)
+    ctx.lineTo(tank.targetX, tank.targetY)
     ctx.stroke()
   }
 }
@@ -270,31 +276,102 @@ function drawSelectionBox() {
   ctx.strokeRect(x, y, w, h)
 }
 
+function drawFog() {
+  const { exploredGrid, visGrid, gridCols, gridRows, ts } = getFogGrids()
+  if (!visGrid) return
+
+  if (!fogCanvas || fogCanvas.width !== canvas.width || fogCanvas.height !== canvas.height) {
+    fogCanvas = document.createElement('canvas')
+    fogCanvas.width = canvas.width
+    fogCanvas.height = canvas.height
+    fogCtx = fogCanvas.getContext('2d')
+  }
+
+  const fc = fogCtx
+  fc.clearRect(0, 0, fogCanvas.width, fogCanvas.height)
+  fc.setTransform(
+    camera.zoom, 0, 0, camera.zoom,
+    canvas.width / 2 - camera.x * camera.zoom,
+    canvas.height / 2 - camera.y * camera.zoom
+  )
+
+  const { left, right, top, bottom } = viewportBounds()
+  const colStart = Math.max(0, Math.floor(left / ts))
+  const colEnd = Math.min(gridCols - 1, Math.ceil(right / ts))
+  const rowStart = Math.max(0, Math.floor(top / ts))
+  const rowEnd = Math.min(gridRows - 1, Math.ceil(bottom / ts))
+
+  for (let row = rowStart; row <= rowEnd; row++) {
+    for (let col = colStart; col <= colEnd; col++) {
+      if (visGrid[row][col] === 1) continue
+      fc.fillStyle = exploredGrid[row][col] === 1
+        ? 'rgba(0,0,0,0.58)'
+        : 'rgba(0,0,0,0.92)'
+      fc.fillRect(col * ts, row * ts, ts, ts)
+    }
+  }
+
+  fc.globalCompositeOperation = 'destination-out'
+
+  const sources = [
+    ...world.tanks.filter(t => t.faction === 'player'),
+    ...world.collectors.filter(c => c.faction === 'player'),
+    world.hq
+  ].filter(Boolean)
+
+  for (const src of sources) {
+    const r = src === world.hq ? 300 : src.radius === 14 ? 160 : 220
+    const grad = fc.createRadialGradient(src.x, src.y, r * 0.65, src.x, src.y, r)
+    grad.addColorStop(0, 'rgba(0,0,0,1)')
+    grad.addColorStop(1, 'rgba(0,0,0,0)')
+    fc.fillStyle = grad
+    fc.beginPath()
+    fc.arc(src.x, src.y, r, 0, Math.PI * 2)
+    fc.fill()
+  }
+
+  fc.globalCompositeOperation = 'source-over'
+  fc.setTransform(1, 0, 0, 1, 0, 0)
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.drawImage(fogCanvas, 0, 0)
+}
+
 export function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  ctx.setTransform(
-    camera.zoom,
-    0,
-    0,
-    camera.zoom,
-    canvas.width / 2 - camera.x * camera.zoom,
-    canvas.height / 2 - camera.y * camera.zoom
-  )
+  worldTransform()
 
   if (world.map) drawTiles()
   else drawGrid()
   drawWorldBounds()
 
-  for (const res of world.resources) drawResource(res)
+  for (const res of world.resources) {
+    if (isExplored(res.x, res.y)) drawResource(res)
+  }
+  if (world.aiHq && isExplored(world.aiHq.x, world.aiHq.y)) drawHQ(world.aiHq, true)
+  for (const t of world.tanks) {
+    if (t.faction === 'ai' && !isVisible(t.x, t.y)) continue
+    drawTank(t)
+  }
+  for (const c of world.collectors) {
+    if (c.faction === 'ai' && !isVisible(c.x, c.y)) continue
+    drawCollector(c)
+  }
+
+  drawFog()
+
+  worldTransform()
+
   if (world.hq) drawHQ(world.hq)
-  if (world.aiHq) drawHQ(world.aiHq, true)
-
+  for (const t of world.tanks) {
+    if (t.faction === 'player') drawTank(t)
+  }
+  for (const c of world.collectors) {
+    if (c.faction === 'player') drawCollector(c)
+  }
   drawMoveMarkers()
-
-  for (const t of world.tanks) drawTank(t)
-  for (const c of world.collectors) drawCollector(c)
 
   drawSelectionBox()
 
