@@ -11,18 +11,13 @@
   <div id="ai-status" class="ai-status"></div>
 
   <div class="hud">
-    <div><strong>Controls</strong></div>
+    Resources: <span id="hq-resources">0</span>
     <div style="margin-bottom:4px"><a href="map_editor.html" style="color:#8abeee;font-size:12px;pointer-events:auto">Map Editor</a></div>
-    <div>Mouse wheel: zoom to cursor</div>
-    <div>Left drag: box select</div>
-    <div>Right click: move selected units</div>
     <div>Middle drag or Shift+Left drag: pan camera</div>
-    <div>Click HQ to build units</div>
   </div>
 
   <div id="hq-panel" class="hq-panel hidden">
-    <div class="hq-title">Headquarters</div>
-    <div class="hq-resources">Resources: <span id="hq-resources">0</span></div>
+    <div class="hq-resources"></div>
     <button id="btn-build-tank">Build Tank (50)</button>
     <button id="btn-build-collector">Build Collector (30)</button>
     <button id="btn-build-helicopter">Build Helicopter (80)</button>
