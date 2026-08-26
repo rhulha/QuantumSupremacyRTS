@@ -104,6 +104,14 @@
       flex-shrink: 0;
       border: 1px solid rgba(255,255,255,0.12);
       position: relative;
+      overflow: hidden;
+    }
+
+    .swatch canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
     }
     .swatch.resource::after {
       content: '';
@@ -169,6 +177,8 @@
 </div>
 
 <script type="module">
+  import { loadTileset, drawTile } from './js/tileset.js'
+
   const TILE_DEFS = [
     { id: 'grass',           label: 'Grass',             color: '#3d6e42' },
     { id: 'wall',            label: 'Wall',              color: '#5a5a5a' },
@@ -205,19 +215,33 @@
 
   const sidebar = document.getElementById('sidebar')
   const tileBtns = {}
+  const swatches = []
 
   for (const def of TILE_DEFS) {
     const btn = document.createElement('button')
     btn.className = 'tile-btn' + (def.id === selectedTile ? ' active' : '')
     const mod = def.resource ? ' resource' : def.hq ? ' hq' : ''
-    btn.innerHTML = `<span class="swatch${mod}" style="background:${def.color}"></span>${def.label}`
+    btn.innerHTML = `<span class="swatch${mod}"><canvas width="44" height="44"></canvas></span>${def.label}`
     btn.addEventListener('click', () => {
       selectedTile = def.id
       for (const [id, b] of Object.entries(tileBtns)) b.classList.toggle('active', id === def.id)
     })
     sidebar.appendChild(btn)
     tileBtns[def.id] = btn
+    swatches.push({ def, canvas: btn.querySelector('canvas') })
   }
+
+  function paintSwatches() {
+    for (const { def, canvas } of swatches) {
+      const g = canvas.getContext('2d')
+      if (!drawTile(g, def.id, 0, 0, canvas.width)) {
+        g.fillStyle = def.color
+        g.fillRect(0, 0, canvas.width, canvas.height)
+      }
+    }
+  }
+
+  paintSwatches()
 
   // ---- Camera ----
 
@@ -247,8 +271,10 @@
         const px = col * cs
         const py = row * cs
 
-        ctx.fillStyle = def.color
-        ctx.fillRect(px, py, cs, cs)
+        if (!drawTile(ctx, id, px, py, cs)) {
+          ctx.fillStyle = def.color
+          ctx.fillRect(px, py, cs, cs)
+        }
 
         if (def.resource) {
           const s = cs * 0.28
@@ -416,6 +442,11 @@
 
   new ResizeObserver(resize).observe(wrap)
   resize()
+
+  loadTileset().then(() => {
+    paintSwatches()
+    render()
+  })
 </script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 import { ctx, camera, world } from './state.js'
 import { viewportBounds } from './render-utils.js'
+import { drawTile } from './tileset.js'
 
 export async function loadMap() {
   try {
@@ -39,24 +40,13 @@ export function drawTiles() {
   for (let row = rowStart; row <= rowEnd; row++) {
     for (let col = colStart; col <= colEnd; col++) {
       const tile = tiles[row][col]
-      ctx.fillStyle = TILE_COLORS[tile] ?? TILE_COLORS.grass
-      ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize)
+      const x = col * tileSize
+      const y = row * tileSize
+      if (!drawTile(ctx, tile, x, y, tileSize)) {
+        ctx.fillStyle = TILE_COLORS[tile] ?? TILE_COLORS.grass
+        ctx.fillRect(x, y, tileSize, tileSize)
+      }
     }
-  }
-
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
-  ctx.lineWidth = 1 / camera.zoom
-  for (let col = colStart; col <= colEnd + 1; col++) {
-    ctx.beginPath()
-    ctx.moveTo(col * tileSize, rowStart * tileSize)
-    ctx.lineTo(col * tileSize, (rowEnd + 1) * tileSize)
-    ctx.stroke()
-  }
-  for (let row = rowStart; row <= rowEnd + 1; row++) {
-    ctx.beginPath()
-    ctx.moveTo(colStart * tileSize, row * tileSize)
-    ctx.lineTo((colEnd + 1) * tileSize, row * tileSize)
-    ctx.stroke()
   }
 }
 

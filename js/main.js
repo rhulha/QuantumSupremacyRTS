@@ -1,13 +1,14 @@
 import { update, init } from './game.js'
 import { render } from './renderer.js'
 import { loadMap } from './map.js'
+import { loadTileset } from './tileset.js'
 import { updateAI, initAI } from './ai.js'
 import { initFog, updateFog } from './fog.js'
 import { camera, world } from './state.js'
 import './input.js'
 
 async function start() {
-  await loadMap()
+  await Promise.all([loadMap(), loadTileset()])
   init()
   initFog()
   initAI()
